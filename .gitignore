@@ -1,0 +1,20 @@
+# Dune build artifacts
+_build/
+
+# Local opam switch
+_opam/
+
+# Generated site output
+_site/
+_public/
+
+# OCaml / merlin
+*.install
+.merlin
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~
