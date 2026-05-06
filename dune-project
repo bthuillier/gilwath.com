@@ -18,6 +18,12 @@
   (ocaml (>= 5.3.0))
   (yocaml (>= 2.5.0))
   (yocaml_unix (>= 2.5.0))
+  cmarkit
+  hilite
+  (yocaml_yaml (>= 2.5.0))
+  (yocaml_markdown (>= 2.5.0))
+  (yocaml_jingoo (>= 2.5.0))
+  
   ;; Dev setup
   (utop :with-dev-setup)
   (ocamlformat :with-dev-setup)

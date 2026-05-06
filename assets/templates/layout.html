@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Benjamin Thuillier</title>
+  <meta name="description" content="Site personnel de Benjamin Thuillier — écrits, projets, parcours.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="page">
+
+    <header class="site-header">
+      <a class="brand" href="index.html">benjamin thuillier</a>
+      <nav>
+        <a href="index.html" aria-current="page">À propos</a>
+        <a href="blog.html">Écrits</a>
+        <a href="cv.html">CV</a>
+      </nav>
+    </header>
+
+    {{safe (yocaml_body) }}
+
+    <footer class="site-footer">
+      <span>© 2026 Benjamin Thuillier</span>
+      <span><a href="mailto:hello@example.com">hello@example.com</a> · <a href="https://github.com/">GitHub</a></span>
+    </footer>
+
+  </div>
+</body>
+</html>

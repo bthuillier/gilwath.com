@@ -1,0 +1,440 @@
+
+/* Reset.css */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+* {
+    margin: 0;
+    min-width: 0;
+}
+
+html {
+    -moz-text-size-adjust: none;
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+    
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    font-size: 1.0rem;
+    font-weight: 400;
+    line-height: 1.2;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+p, img, picture, video, canvas, svg {
+    display: block;
+    max-width: 100%;
+}
+
+input, button, textarea, select {
+    font: inherit;
+}
+
+p, h1, h2, h3, h4, h5, h6 {
+    overflow-wrap: break-word;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 900;
+}
+
+/* ---------------------------------------------------------------
+   Personal site — typographique brut
+   Style: type-first, blanc dominant, pas de couleur, pas de cadre.
+   Inspiré de Wolfram / Gwern / Robin Sloan.
+   --------------------------------------------------------------- */
+
+/* ---------- Design tokens ------------------------------------- */
+:root {
+  /* Couleurs : ton chaud, pas de blanc/noir purs */
+  --bg:           #fdfcf7;
+  --bg-soft:      #f5f1e6;
+  --ink:          #1a1715;
+  --ink-muted:    #6b6864;
+  --rule:         #d8d2c4;
+
+  /* Typo : stack système haut de gamme, fallback systématique.
+     Si tu veux une rendu identique partout, ajoute en <head> :
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;1,400&display=swap">
+     puis remplace 'Iowan Old Style' par 'Newsreader' en première position. */
+  --font-serif:  "Iowan Old Style", "Palatino Linotype", Palatino,
+                 "Hoefler Text", "Charter", Cambria, Georgia, serif;
+  --font-mono:   ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  --font-sans:   ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", sans-serif;
+
+  /* Dimensions */
+  --measure:     38rem;   /* largeur de lecture confortable */
+  --measure-wide: 52rem;  /* CV, tableaux */
+  --leading:     1.65;
+
+  /* Échelle d'espace (multiples cohérents) */
+  --s-1: .5rem;
+  --s-2: 1rem;
+  --s-3: 1.5rem;
+  --s-4: 2rem;
+  --s-5: 3rem;
+  --s-6: 5rem;
+  --s-7: 8rem;
+}
+
+/* ---------- Reset minimal ------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern", "liga", "onum"; /* old-style figures pour les chiffres */
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: 1.125rem;            /* 18px */
+  line-height: var(--leading);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+img, svg { max-width: 100%; height: auto; display: block; }
+
+/* ---------- Layout : une colonne centrée ---------------------- */
+.page {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: var(--s-6) clamp(1.25rem, 5vw, 2rem) var(--s-7);
+}
+
+.page--wide { max-width: var(--measure-wide); }
+
+/* ---------- Header / nav -------------------------------------- */
+.site-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-bottom: var(--s-6);
+  font-size: .875rem;
+}
+
+.site-header .brand {
+  font-style: italic;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.site-header nav {
+  display: flex;
+  gap: var(--s-3);
+}
+
+.site-header nav a {
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+.site-header nav a:hover,
+.site-header nav a[aria-current="page"] {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: .25em;
+  text-decoration-thickness: 1px;
+}
+
+/* ---------- Headings ------------------------------------------ */
+h1, h2, h3, h4 {
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0 0 var(--s-3);
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: clamp(1.875rem, 4vw, 2.5rem);
+  font-weight: 400;          /* hairline, plus aérien */
+  letter-spacing: -0.02em;
+  margin-bottom: var(--s-2);
+}
+
+h2 {
+  font-size: 1.375rem;
+  margin-top: var(--s-5);
+}
+
+h3 {
+  font-size: 1.125rem;
+  font-style: italic;
+  font-weight: 400;
+  margin-top: var(--s-4);
+}
+
+/* ---------- Paragraphes & inline ------------------------------ */
+p { margin: 0 0 1.1em; }
+
+a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--rule);
+  transition: text-decoration-color .15s;
+}
+a:hover { text-decoration-color: var(--ink); }
+
+em, i { font-style: italic; }
+strong, b { font-weight: 600; }
+
+small, .small { font-size: .875rem; color: var(--ink-muted); }
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: var(--s-5) 0;
+}
+
+/* Citation longue : pas de cadre, juste un trait fin et de l'italique */
+blockquote {
+  margin: var(--s-4) 0;
+  padding-left: var(--s-3);
+  border-left: 2px solid var(--rule);
+  font-style: italic;
+  color: var(--ink-muted);
+}
+
+/* Listes : retrait modeste */
+ul, ol { padding-left: 1.25em; margin: 0 0 1.2em; }
+li { margin-bottom: .35em; }
+
+/* Code */
+code, kbd, samp, pre {
+  font-family: var(--font-mono);
+  font-size: .9em;
+}
+:not(pre) > code {
+  background: var(--bg-soft);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+pre {
+  background: var(--bg-soft);
+  padding: var(--s-3);
+  overflow-x: auto;
+  line-height: 1.5;
+  margin: var(--s-3) 0;
+  font-size: .9rem;
+}
+
+/* Note de bas de page (style Tufte/Gwern) */
+.footnote-ref {
+  font-size: .75em;
+  vertical-align: super;
+  text-decoration: none;
+  margin-left: 1px;
+}
+.footnotes {
+  margin-top: var(--s-6);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--rule);
+  font-size: .9rem;
+  color: var(--ink-muted);
+}
+.footnotes ol { padding-left: 1.5em; }
+
+/* ---------- Page d'accueil ------------------------------------ */
+.hero { margin-bottom: var(--s-5); }
+.hero h1 { margin-bottom: var(--s-1); }
+.hero .tagline {
+  font-style: italic;
+  color: var(--ink-muted);
+  font-size: 1.125rem;
+  margin: 0;
+}
+
+.section-label {
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: .75rem;
+  color: var(--ink-muted);
+  margin: var(--s-5) 0 var(--s-2);
+}
+
+/* ---------- Index du blog ------------------------------------- */
+.post-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.post-list li {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: var(--s-3);
+  align-items: baseline;
+  padding: .75rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.post-list li:last-child { border-bottom: 0; }
+.post-list time {
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums oldstyle-nums;
+  font-size: .9rem;
+}
+.post-list a {
+  text-decoration: none;
+  color: var(--ink);
+}
+.post-list a:hover { text-decoration: underline; text-underline-offset: .2em; }
+
+.year-heading {
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: .75rem;
+  color: var(--ink-muted);
+  font-weight: 500;
+  margin: var(--s-5) 0 var(--s-1);
+}
+.year-heading:first-of-type { margin-top: 0; }
+
+/* ---------- Article ------------------------------------------- */
+.article-meta {
+  color: var(--ink-muted);
+  font-size: .9rem;
+  margin-bottom: var(--s-4);
+}
+
+/* Lettrine sur le premier paragraphe — désactivable en retirant cette règle */
+.article > p:first-of-type::first-letter {
+  font-size: 3.4em;
+  float: left;
+  line-height: 0.9;
+  margin: 0.05em 0.08em 0 -0.04em;
+  font-weight: 400;
+}
+
+/* ---------- CV ------------------------------------------------ */
+.cv-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-bottom: var(--s-2);
+}
+.cv-header h1 { margin: 0; }
+
+.cv-contact {
+  margin: 0 0 var(--s-5);
+  font-size: .9rem;
+  color: var(--ink-muted);
+}
+.cv-contact a { color: var(--ink-muted); }
+
+.cv-actions {
+  margin-bottom: var(--s-5);
+}
+.btn-link {
+  display: inline-block;
+  padding: .5em 1em;
+  border: 1px solid var(--ink);
+  text-decoration: none;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.btn-link:hover { background: var(--ink); color: var(--bg); }
+
+.cv-section { margin-bottom: var(--s-5); }
+.cv-section h2 {
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: .35rem;
+  margin-bottom: var(--s-3);
+}
+
+.cv-entry {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+}
+.cv-entry .when {
+  color: var(--ink-muted);
+  font-size: .9rem;
+  font-variant-numeric: tabular-nums oldstyle-nums;
+}
+.cv-entry h3 { margin: 0 0 .15rem; font-size: 1rem; font-style: normal; font-weight: 600; }
+.cv-entry .where { color: var(--ink-muted); font-style: italic; font-size: .95rem; }
+.cv-entry p, .cv-entry ul { font-size: .95rem; margin-top: .5em; }
+
+@media (max-width: 600px) {
+  .cv-entry { grid-template-columns: 1fr; gap: .25rem; }
+  .post-list li { grid-template-columns: 1fr; gap: .15rem; }
+}
+
+/* ---------- Footer -------------------------------------------- */
+.site-footer {
+  margin-top: var(--s-7);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--rule);
+  font-size: .85rem;
+  color: var(--ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+.site-footer a { color: var(--ink-muted); }
+
+/* ---------- Print : optimisé pour le CV (A4) ------------------ */
+@media print {
+  :root {
+    --bg: #fff;
+    --ink: #000;
+    --ink-muted: #444;
+    --rule: #aaa;
+  }
+  body { font-size: 10.5pt; line-height: 1.4; }
+  .page { max-width: none; padding: 0; margin: 0; }
+  .site-header, .site-footer, .cv-actions, .no-print { display: none !important; }
+  h1 { font-size: 20pt; }
+  .cv-section { margin-bottom: 1rem; page-break-inside: avoid; }
+  .cv-entry { page-break-inside: avoid; }
+  a { color: inherit; text-decoration: none; }
+  .cv-contact a::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #666;
+  }
+  /* éviter de spammer les URLs des liens internes */
+  .cv-contact a[href^="mailto:"]::after,
+  .cv-contact a[href^="https://"]::after { content: ""; }
+}
+
+/* ---------- Mode sombre (auto, opt-in via prefers-color-scheme)
+   Tu peux le supprimer si tu veux strictement light-only. ------ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #15130f;
+    --bg-soft:   #1f1c17;
+    --ink:       #e8e3d6;
+    --ink-muted: #8e887d;
+    --rule:      #2e2a23;
+  }
+}

@@ -1,5 +1,197 @@
-let program () = 
-  Yocaml.Eff.log ~level:`Info "Hello World, from YOCaml"
-  
-let () = 
-  Yocaml_unix.run ~level:`Debug program
+open Yocaml
+
+(* -------------------------------------------------------------------------- *)
+(* Paths                                                                      *)
+(* -------------------------------------------------------------------------- *)
+
+let www = Path.rel [ "_www" ]
+
+let assets = Path.rel [ "assets" ]
+let css = Path.(assets / "css")
+let images = Path.(assets / "images")
+let templates = Path.(assets / "templates")
+
+let content = Path.rel [ "content" ]
+let pages = Path.(content / "pages")
+let articles = Path.(content / "articles")
+
+(* -------------------------------------------------------------------------- *)
+(* Helpers                                                                    *)
+(* -------------------------------------------------------------------------- *)
+
+let with_ext exts file =
+  List.exists (fun ext -> Path.has_extension ext file) exts
+
+let is_markdown = with_ext [ "md"; "markdown"; "mdown" ]
+
+let track_binary =
+  Sys.executable_name
+  |> Yocaml.Path.from_string
+  |> Pipeline.track_file
+
+let compute_link source =
+  let into = Path.abs [ "articles" ] in
+  source
+  |> Path.move ~into
+  |> Path.change_extension "html"
+
+(* -------------------------------------------------------------------------- *)
+(* Document kinds                                                             *)
+(* -------------------------------------------------------------------------- *)
+
+type document_kind =
+  | Page
+  | Article
+
+module type ARCHETYPE = sig
+  include Yocaml.Required.DATA_INJECTABLE
+  include Yocaml.Required.DATA_READABLE with type t := t
+end
+
+let document_sources = function
+  | Page -> pages
+  | Article -> articles
+
+let document_path document_kind path =
+  let into = match document_kind with
+    | Page -> www
+    | Article -> Path.(www / "articles")
+  in
+  path |> Path.move ~into |> Path.change_extension "html"
+
+let get_specific_template document_kind =
+  let file = match document_kind with
+    | Page -> "page.html"
+    | Article -> "article.html"
+  in
+  Path.(templates / file)
+
+let document_archetype : document_kind -> (module ARCHETYPE) = function
+  | Page -> (module Archetype.Page)
+  | Article -> (module Archetype.Article)
+
+(* -------------------------------------------------------------------------- *)
+(* Articles index                                                             *)
+(* -------------------------------------------------------------------------- *)
+
+let fetch_articles =
+  Archetype.Articles.fetch
+    ~where:is_markdown
+    ~compute_link
+    (module Yocaml_yaml)
+    articles
+
+(* -------------------------------------------------------------------------- *)
+(* Build actions                                                              *)
+(* -------------------------------------------------------------------------- *)
+
+let create_document document_kind source =
+  let module Archetype = (val document_archetype document_kind) in
+  let target = document_path document_kind source
+  and pipeline =
+    let open Task in
+    let+ () = track_binary
+    and+ templates =
+      Yocaml_jingoo.read_templates
+        Path.[ get_specific_template document_kind
+             ; templates / "layout.html" ]
+    and+ metadata, content =
+      Yocaml_yaml.Pipeline.read_file_with_metadata
+        (module Archetype)
+        source
+    in
+    content
+    |> Yocaml_markdown.from_string_to_html
+    |> templates (module Archetype) ~metadata
+  in
+  Action.Static.write_file target pipeline
+
+let create_documents document_kind =
+  let sources = document_sources document_kind in
+  Batch.iter_files ~where:is_markdown sources
+    (create_document document_kind)
+
+let create_pages = create_documents Page
+let create_articles = create_documents Article
+
+let create_index =
+  let source = Path.(content / "index.md") in
+  let index_path =
+    source
+    |> Path.move ~into:www
+    |> Path.change_extension "html"
+  in
+  let pipeline =
+    let open Task in
+    let+ () = track_binary
+    and+ templates =
+      Yocaml_jingoo.read_templates
+        Path.[ templates / "index.html"
+             ; templates / "page.html"
+             ; templates / "layout.html"
+             ]
+    and+ articles = fetch_articles
+    and+ metadata, content =
+      Yocaml_yaml.Pipeline.read_file_with_metadata
+        (module Archetype.Page)
+        source
+    in
+    let metadata =
+      Archetype.Articles.with_page
+        ~page:metadata
+        ~articles
+    in
+    content
+    |> Yocaml_markdown.from_string_to_html
+    |> templates (module Archetype.Articles) ~metadata
+  in
+  Action.Static.write_file index_path pipeline
+
+let copy_images =
+  let images_path = Path.(www / "images")
+  and where = with_ext [ "svg"; "png"; "jpg"; "gif" ] in
+  Batch.iter_files
+    ~where images
+    (Action.copy_file ~into:images_path)
+
+let create_css =
+  let css_path = Path.(www / "style.css") in
+  let pipeline =
+    let open Task in
+    let+ () = track_binary
+    and+ content =
+      Pipeline.pipe_files ~separator:"\n"
+        Path.[ css / "reset.css"
+             ; css / "style.css" ]
+    in
+    content
+  in
+  Action.Static.write_file css_path pipeline
+
+(* -------------------------------------------------------------------------- *)
+(* Program                                                                    *)
+(* -------------------------------------------------------------------------- *)
+
+let program () =
+  let open Eff in
+  let cache = Path.(www / ".cache") in
+  Action.restore_cache cache
+  >>= copy_images
+  >>= create_css
+  >>= create_pages
+  >>= create_articles
+  >>= create_index
+  >>= Action.store_cache cache
+
+let () =
+  match Sys.argv.(1) with
+  | "server" ->
+    Yocaml_unix.serve
+      ~level:`Info
+      ~target:www
+      ~port:8000
+      program
+  | _ | (exception _) ->
+    Yocaml_unix.run
+      ~level:`Debug
+      program
