@@ -312,8 +312,25 @@ pre {
   margin-bottom: var(--s-4);
 }
 
+/* Deck / chapeau d'article : ce paragraphe que les journaux placent entre
+   le titre et le corps. Plus calme que le titre, plus appuyé que la prose. */
+.article > .tagline {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.25rem;
+  line-height: 1.45;
+  color: var(--ink-muted);
+  max-width: 32rem;          /* mesure plus courte = lecture rythmée */
+  margin: 0 0 var(--s-5);
+  padding-left: var(--s-2);
+  border-left: 2px solid var(--rule);
+}
+
+/* La lettrine ne doit pas s'appliquer au tagline si jamais il est
+   le premier <p> du conteneur — on la cible explicitement plus bas. */
+
 /* Lettrine sur le premier paragraphe — désactivable en retirant cette règle */
-.article > p:first-of-type::first-letter {
+.article > p:first-of-type:not(.tagline)::first-letter {
   font-size: 3.4em;
   float: left;
   line-height: 0.9;

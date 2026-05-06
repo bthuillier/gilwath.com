@@ -44,6 +44,7 @@ let compute_link source =
 module Site = Blog_core.Site
 module Experience = Blog_core.Experience
 module Cv = Blog_core.Cv
+module Reading_time = Blog_core.Reading_time
 
 let site_path = Path.(content / "site.yml")
 
@@ -148,6 +149,13 @@ let fetch_articles =
 (* Build actions                                                              *)
 (* -------------------------------------------------------------------------- *)
 
+(* Article-only extras injected into the template namespace. Computed from
+   the raw markdown body before rendering — see [Reading_time.estimate]. *)
+let document_extras document_kind content =
+  match document_kind with
+  | Article -> Data.[ "reading_time", int (Reading_time.estimate content) ]
+  | Page -> []
+
 let create_document document_kind source =
   let module Archetype = (val document_archetype document_kind) in
   let module Bundle = With_site (Archetype) in
@@ -166,10 +174,17 @@ let create_document document_kind source =
         source
     in
     let bundle = (metadata, site) in
+    let extras = document_extras document_kind content in
+    (* Wrap [Bundle] so that [extras] are visible to both the in-body Jingoo
+       pre-render (via [render_md]) and to the surrounding template chain. *)
+    let module Bundle_with_extras = struct
+      type t = Bundle.t
+      let normalize b = extras @ Bundle.normalize b
+    end in
     content
-    |> render_md ~metadata:(Bundle.normalize bundle)
+    |> render_md ~metadata:(Bundle_with_extras.normalize bundle)
     |> Yocaml_markdown.from_string_to_html
-    |> templates (module Bundle) ~metadata:bundle
+    |> templates (module Bundle_with_extras) ~metadata:bundle
   in
   Action.Static.write_file target pipeline
 
@@ -217,6 +232,46 @@ let create_index =
     |> templates (module Bundle) ~metadata:bundle
   in
   Action.Static.write_file index_path pipeline
+
+(* The /blog.html listing — same shape as [create_index], with its own
+   template chain and source. Kept as a distinct action (rather than
+   parameterised) until a third listing appears and the duplication earns
+   its own helper. *)
+let create_blog =
+  let module Bundle = With_site (Archetype.Articles) in
+  let source = Path.(content / "blog.md") in
+  let blog_path =
+    source
+    |> Path.move ~into:www
+    |> Path.change_extension "html"
+  in
+  let pipeline =
+    let open Task in
+    let+ () = track_binary
+    and+ templates =
+      Yocaml_jingoo.read_templates
+        Path.[ templates / "blog.html"
+             ; templates / "layout.html"
+             ]
+    and+ site = read_site
+    and+ articles = fetch_articles
+    and+ metadata, content =
+      Yocaml_yaml.Pipeline.read_file_with_metadata
+        (module Archetype.Page)
+        source
+    in
+    let metadata =
+      Archetype.Articles.with_page
+        ~page:metadata
+        ~articles
+    in
+    let bundle = (metadata, site) in
+    content
+    |> render_md ~metadata:(Bundle.normalize bundle)
+    |> Yocaml_markdown.from_string_to_html
+    |> templates (module Bundle) ~metadata:bundle
+  in
+  Action.Static.write_file blog_path pipeline
 
 let create_cv =
   let module Bundle = With_site (struct
@@ -287,6 +342,7 @@ let program () =
   >>= create_pages
   >>= create_articles
   >>= create_index
+  >>= create_blog
   >>= create_cv
   >>= Action.store_cache cache
 

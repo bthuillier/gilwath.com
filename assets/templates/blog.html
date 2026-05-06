@@ -1,0 +1,19 @@
+<main>
+  <section class="hero">
+    <h1>Articles</h1>
+    {{safe (yocaml_body) }}
+  </section>
+
+  {% if has_articles %}
+  <ul class="post-list">
+    {% for article in articles %}
+    <li>
+      <time datetime="{{ article.date.repr.date }}">{{ printf("%02d.%02d.%d", article.date.day, article.date.month, article.date.year) }}</time>
+      <a href="{{ article.url }}">{{ article.title }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>Nothing here yet.</p>
+  {% endif %}
+</main>
