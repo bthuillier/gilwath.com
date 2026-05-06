@@ -1,38 +1,18 @@
 ---
 title: Building a CV page with YOCaml
-synopsis: A retrospective of how I turned a folder of markdown files into a CV page — and the dead ends I hit along the way.
+synopsis: A retrospective of how I turned a folder of markdown files into a CV page
 date: 2026-05-06
 ---
 
-This blog is built with [YOCaml](https://github.com/xhtmlboi/yocaml), a static-site generator written in OCaml. The default setup gives you pages and articles. I wanted a third thing: a **CV page** that lists my professional experience, with each role sourced from its own markdown file so I can edit history without touching HTML.
+## Yocaml
 
-This is the path I took, including a couple of detours I had to back out of. If you're building something similar, hopefully my dead ends save you a few minutes.
+This blog is built with [YOCaml](https://github.com/xhtmlboi/yocaml), a static-site generator written in OCaml that one of his maintainer introduced me, thanks XVW for that. Yocaml unlike other static site generator doesn't force you in a proper workflow or structure, we can say that Yocaml is just a build system allowing you to create pipeline to build in our case a website, but if you want to have something similar to what jekyll or other static site generator you can just follow the tutorial that will allow you to build a blog easily with pages and articles.
 
-## What I started with
-
-Out of the box, my generator handled two kinds of documents. They share a common pipeline: read a markdown file with YAML front matter, validate the front matter against an *archetype* (YOCaml's word for a metadata schema), render the body to HTML, and pour everything into a Jingoo template.
-
-```ocaml
-type document_kind =
-  | Page
-  | Article
-```
-
-A new constructor here means a new folder of markdown sources, a new template, and a new output path. My first instinct was to add `| Experience` and call it a day.
-
-That instinct was wrong.
-
-## First detour: experience-as-document
-
-Adding `| Experience` produced a page per experience — `/experiences/conduktor.html`, `/experiences/talend.html`, and so on. Technically it worked. But each rendered page was a single experience floating in the layout, with no way to see them as a list. To get a CV out of it, I'd have needed a *second* mechanism — fetching the experiences and presenting them somewhere — which is exactly what I was trying to avoid.
-
-The right model isn't *"experiences are documents"*. It's *"experiences are data, and the CV is the document"*. The CV has a body (some prose introducing me) and it carries a list of experiences. One page, one output, one template.
-
-Once I framed it that way, the structure clicked into place. YOCaml's standard library already has the same shape: `Yocaml.Archetype.Articles` is a `Page` carrying a list of `Article`s, used to render the blog index. I just needed the same pattern for `Experience`s.
+but, because is my personal website, I think that having also a place where I can put my CV with all my experience will be a nice improvement and also a good exercice to try to learn more about yocaml and ocaml, so basically I reuse what I learned during the tutorial to build my resumé
 
 ## Modelling Experience
 
-An experience has a role, a company, a start date, and optionally an end date (when the end date is missing, the experience is current). The natural OCaml type:
+A resumé is a set of experience and skill that we want to display in a chronological order for the experience case, in this case on yocaml we can create our own Datastructure, for that we can say that an experience is composed of a role, a company, a start date, and optionally an end date (when the end date is missing, the experience is current). The natural OCaml type:
 
 ```ocaml
 type t =
@@ -58,9 +38,9 @@ let validate =
     { role; company; start_date; end_date })
 ```
 
-The `let+ … and+` syntax composes independent validations — each field is checked on its own, and YOCaml accumulates errors rather than bailing on the first failure. That's nicer than I expected: editing two unrelated fields in the same file gives me both errors at once.
+The `let+ … and+` syntax composes independent validations, each field is checked on its own, and YOCaml accumulates errors rather than bailing on the first failure. That's nicer than I expected: editing two unrelated fields in the same file gives me both errors at once.
 
-`normalize` is the mirror image — it turns a `t` back into the key-value pairs templates iterate over. The interesting bit is the `has_end_date` boolean:
+`normalize` is the mirror image, it turns a `t` back into the key-value pairs templates iterate over. The interesting bit is the `has_end_date` boolean:
 
 ```ocaml
 "has_end_date", bool (Option.is_some end_date);
@@ -70,7 +50,7 @@ Jingoo's truthiness on `null` is awkward, so I expose an explicit flag rather th
 
 ## The Cv archetype
 
-`Cv` is just a `Page` that also carries experiences. Each experience travels alongside its rendered HTML body — paired in a tuple rather than baked into the type:
+A CV page is a regular `Page` (front matter, body, the usual) that also carries a list of experiences. Rather than extend `Experience.t` with an HTML body field, I pair each experience with its rendered body in a tuple:
 
 ```ocaml
 type t =
@@ -79,9 +59,9 @@ type t =
   }
 ```
 
-This pairing pattern was my **second detour**. My first attempt added a `body : string` field directly to `Experience.t`, initialized to `""` in `validate` and patched in later by the fetcher. It worked, but it lied: the type promised a body that the validator never produced. Rendering details (HTML output) had infected the data type.
+The split is deliberate. `Experience.t` describes what's in a markdown file — role, company, dates — and that definition has no business knowing about HTML. The rendered body is a build artifact: it only exists once a markdown-to-HTML pass has run. Keeping it outside the type means `Experience` stays pure data, and the library that holds it doesn't need to depend on `yocaml_markdown`.
 
-The fix was looking at how `Yocaml.Archetype.Articles` does it. `Articles` doesn't store a URL on `Article.t`; it pairs `(Path.t, Article.t)` and merges the URL in at normalization time. Same pattern works for the experience body.
+`normalize` then has to surface both halves to the template:
 
 ```ocaml
 let normalize { page; experiences } =
@@ -96,7 +76,7 @@ let normalize { page; experiences } =
     ]
 ```
 
-The body shows up in the template as {% raw %}`{{ experience.body }}`{% endraw %} — invisible to the OCaml type system but present where it matters.
+Two things to notice. The body is glued onto the front of `Experience.normalize exp`, so from the template's point of view it's just another field — {% raw %}`{{ experience.body }}`{% endraw %} sits next to {% raw %}`{{ experience.role }}`{% endraw %} with no hint that one came from markdown and the other from YAML. And `has_experiences` is the same trick as `has_end_date` from the previous section: an explicit boolean rather than asking the template to introspect a list.
 
 ## Fetching the experiences
 
@@ -144,7 +124,7 @@ The inline module is a one-line shim. `With_site` is a functor that takes a `DAT
 
 ## Splitting bin and lib
 
-By this point my `bin/blog.ml` had grown to about 400 lines, with `Site`, `Experience`, `Cv`, and the build pipeline all in the same file. I extracted the three data modules into a `lib/` folder.
+By this point `bin/blog.ml` had crossed 400 lines and was carrying everything: `Site`, `Experience`, `Cv`, the validators, the normalizers, and the build pipeline. That's too much for one file, and most of it isn't really about *building this site* — it's about describing the data that lives in it. So I moved the data modules into a `lib/` folder and left `bin/blog.ml` with only what actually drives the build.
 
 ```
 lib/
@@ -152,22 +132,23 @@ lib/
 ├── site.ml + .mli
 ├── experience.ml + .mli
 └── cv.ml + .mli
+
+bin/
+├── dune              ← (executable (name blog) (libraries blog_core yocaml_yaml yocaml_markdown))
+└── blog.ml           ← paths, fetch_experiences, create_cv, the program entry point
 ```
 
-Three guidelines I followed:
+Three guidelines I followed when deciding what crossed the boundary:
 
-- **Paths stay in `bin`.** They describe this site's filesystem layout, which isn't reusable.
-- **The `.mli` files keep `t` abstract** wherever possible. `Experience.t` was the one exception — `bin` reads `start_date` to sort, so the `.mli` exposes a `start_date : t -> Archetype.Datetime.t` accessor rather than the whole record. That way I can add a `team` or `company_logo` field later without breaking callers.
-- **The library only depends on `yocaml`**, not `yocaml_yaml` or `yocaml_markdown`. Validation and normalization are pure data — no I/O, no parsing of any specific format. The bin layer chooses how to feed YAML into the validator.
+- **Paths stay in `bin`.** They describe this site's filesystem layout (`content/articles`, `content/experiences`, `_site`), which isn't reusable.
+- **The `.mli` files keep `t` abstract** wherever possible. `Experience.t` was the one exception — `bin` reads `start_date` to sort, so the signature exposes a `start_date : t -> Archetype.Datetime.t` accessor rather than the whole record. That way I can add a `team` or `company_logo` field later without breaking callers.
+- **The library only depends on `yocaml`**, not `yocaml_yaml` or `yocaml_markdown`. Validation and normalization are pure data — no I/O, no parsing of any specific format. The `bin` layer chooses how to feed YAML into the validator and how to render markdown into HTML.
 
-## What's left
+The result is a `blog.ml` that reads top-to-bottom as "here is how this site is built": the paths, the fetch tasks, the `create_*` actions, the `main`. Everything that answers "what is an experience?" or "what is a CV?" lives next door, in modules I could lift wholesale into another YOCaml project.
 
-What I have now is a CV page driven by a folder of markdown files. Adding a new role is one new file. Re-ordering them is automatic. The build refuses to ship if a date is malformed.
+## What's next
 
-What I don't have yet, and might revisit:
+The experience was smoother than I expected, but I have to be honest: I leaned heavily on existing YOCaml code and on an LLM to bridge the gaps in my OCaml. The result works and I understand why, but I couldn't yet read an unfamiliar OCaml file fluently. Before adding more features, I want to sit down with the syntax — functors, `let+`/`and+`, module signatures — until it reads as naturally as the TypeScript I write daily.
 
-- **Per-experience pages.** Right now each experience renders only inline on the CV. The same files could feed both views — same archetype, second build action.
-- **A `team` and `company_logo` field.** The data exists in some of my markdown files but isn't captured by `Experience.t`, so it's silently dropped. A small extension when I want to surface it.
-- **Education and skills sections.** Currently hardcoded prose in `cv.md`. If I find the structure useful enough to template, the same pattern applies — define an archetype, fetch a folder, normalize a list.
+The other obvious next step is deployment. The site still only builds locally; a small GitHub Actions workflow running `dune build` and pushing `_site` to `gh-pages` would make adding a new experience a true one-file commit.
 
-The shape of the system makes those changes obvious. That's the part I appreciated most about YOCaml: it's not a framework with opinions, it's a library with primitives. You build the structure you want, one `Action` at a time.
