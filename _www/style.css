@@ -451,14 +451,3 @@ pre {
   .cv-contact a[href^="https://"]::after { content: ""; }
 }
 
-/* ---------- Mode sombre (auto, opt-in via prefers-color-scheme)
-   Tu peux le supprimer si tu veux strictement light-only. ------ */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:        #15130f;
-    --bg-soft:   #1f1c17;
-    --ink:       #e8e3d6;
-    --ink-muted: #8e887d;
-    --rule:      #2e2a23;
-  }
-}
