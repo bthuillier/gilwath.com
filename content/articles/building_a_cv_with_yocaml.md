@@ -148,7 +148,9 @@ The result is a `blog.ml` that reads top-to-bottom as "here is how this site is 
 
 ## What's next
 
-The experience was smoother than I expected, but I have to be honest: I leaned heavily on existing YOCaml code and on an LLM to bridge the gaps in my OCaml. The result works and I understand why, but I couldn't yet read an unfamiliar OCaml file fluently. Before adding more features, I want to sit down with the syntax — functors, `let+`/`and+`, module signatures — until it reads as naturally as the TypeScript I write daily.
+The experience was smoother than I expected, but I have to be honest: I leaned heavily on existing YOCaml code and on an LLM to bridge the gaps in my OCaml. The result works and I understand why, but I couldn't yet read an unfamiliar OCaml file fluently. Before adding more features, I want to sit down with the syntax — functors, `let+`/`and+`, module signatures — until it reads as naturally as the Scala I write daily.
 
-The other obvious next step is deployment. The site still only builds locally; a small GitHub Actions workflow running `dune build` and pushing `_site` to `gh-pages` would make adding a new experience a true one-file commit.
+The other obvious next step is deployment. The site still only builds locally; a small GitHub Actions workflow running `dune build` and pushing `_site` to `gh-pages` would make adding a new experience a true one-file commit. Then again, if you're reading this, I clearly managed
+
+
 

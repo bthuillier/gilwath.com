@@ -134,7 +134,7 @@ bin/
 </ul>
 <p>The result is a <code>blog.ml</code> that reads top-to-bottom as &quot;here is how this site is built&quot;: the paths, the fetch tasks, the <code>create_*</code> actions, the <code>main</code>. Everything that answers &quot;what is an experience?&quot; or &quot;what is a CV?&quot; lives next door, in modules I could lift wholesale into another YOCaml project.</p>
 <h2 id="whats-next"><a class="anchor" aria-hidden="true" href="#whats-next"></a>What's next</h2>
-<p>The experience was smoother than I expected, but I have to be honest: I leaned heavily on existing YOCaml code and on an LLM to bridge the gaps in my OCaml. The result works and I understand why, but I couldn't yet read an unfamiliar OCaml file fluently. Before adding more features, I want to sit down with the syntax — functors, <code>let+</code>/<code>and+</code>, module signatures — until it reads as naturally as the TypeScript I write daily.</p>
+<p>The experience was smoother than I expected, but I have to be honest: I leaned heavily on existing YOCaml code and on an LLM to bridge the gaps in my OCaml. The result works and I understand why, but I couldn't yet read an unfamiliar OCaml file fluently. Before adding more features, I want to sit down with the syntax — functors, <code>let+</code>/<code>and+</code>, module signatures — until it reads as naturally as the Scala I write daily.</p>
 <p>The other obvious next step is deployment. The site still only builds locally; a small GitHub Actions workflow running <code>dune build</code> and pushing <code>_site</code> to <code>gh-pages</code> would make adding a new experience a true one-file commit.</p>
 
 
