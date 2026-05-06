@@ -1,16 +1,16 @@
 ---
 page_title: Benjamin Thuillier
-description: Site personnel de Benjamin Thuillier — écrits, projets, parcours.
+description: Personal site of Benjamin Thuillier — writings, projects, résumé.
 ---
 
-Bienvenue. Cet endroit est tranquille : quelques notes, des liens vers ce que je fabrique, et un parcours [en bonne et due forme](cv.html) pour ceux qui aiment les listes datées.
+Welcome. This place is quiet: a few notes, links to what I'm building, and a [proper résumé](cv.html) for those who like dated lists.
 
-Je m'intéresse aux systèmes distribués, aux outils de développeur, et à ce que devient une idée quand on la passe au crible de la production. J'écris pour comprendre — pas pour publier — donc les [articles](blog.html) sortent par à-coups, quand quelque chose mérite d'être posé par écrit.
+I'm interested in distributed systems, developer tools, and what becomes of an idea once it's been put through the sieve of production. I write to understand — not to publish — so [posts](blog.html) come in fits and starts, when something deserves to be set down.
 
-Tu peux m'écrire à [hello@example.com](mailto:hello@example.com), ou me trouver sur [GitHub](https://github.com/).
+You can write to me at [{{ site.email }}](mailto:{{ site.email }}), or find me on [GitHub]({{ site.github }}).
 
-<p class="section-label">En ce moment</p>
+<p class="section-label">Currently</p>
 
-- Je travaille sur l'observabilité de pipelines Kafka.
-- Je relis *Designing Data-Intensive Applications* pour la troisième fois.
-- Je remets ce site en route — d'où le calme apparent.
+- Working on observability for Kafka pipelines.
+- Re-reading *Designing Data-Intensive Applications* for the third time.
+- Bringing this site back to life — hence the apparent quiet.

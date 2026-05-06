@@ -1,11 +1,19 @@
-<article>
-  <header>
-    <h1>{{ title }}</h1>
-    <time datetime="{{ date.repr.date }}">{{ date.repr.datetime }}</time>
-    {% if has_description %}
-      <p class="description">{{ description }}</p>
-    {% endif %}
-  </header>
+<main>
+  <article class="article">
+    <header class="hero">
+      <p class="article-meta">
+        <time datetime="{{ date.repr.date }}">{{ printf("%02d.%02d.%d", date.day, date.month, date.year) }}</time>
+      </p>
+      <h1>{{ title }}</h1>
+      {% if has_synopsis %}
+      <p class="tagline">{{ synopsis }}</p>
+      {% endif %}
+    </header>
 
-  {{safe (yocaml_body) }}
-</article>
+    {{safe (yocaml_body) }}
+
+    <p class="article-meta">
+      <a href="/">← Back</a>
+    </p>
+  </article>
+</main>

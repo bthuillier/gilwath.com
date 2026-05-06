@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Benjamin Thuillier</title>
-  <meta name="description" content="Site personnel de Benjamin Thuillier — écrits, projets, parcours.">
-  <link rel="stylesheet" href="style.css">
+  <meta name="description" content="Here is my first article">
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <div class="page">
@@ -13,29 +13,35 @@
     <header class="site-header">
       <a class="brand" href="index.html">benjamin thuillier</a>
       <nav>
-        <a href="index.html" aria-current="page">À propos</a>
-        <a href="blog.html">Écrits</a>
-        <a href="cv.html">CV</a>
+        <a href="/index.html" aria-current="page">About</a>
+        <a href="/blog.html">Articles</a>
+        <a href="/cv.html">CV</a>
       </nav>
     </header>
 
-    <article>
-  <header>
-    <h1>My first Article</h1>
-    <time datetime="2025-09-08">2025-09-08 00:00:00</time>
-    
-      <p class="description">Here is my first article</p>
-    
-  </header>
+    <main>
+  <article class="article">
+    <header class="hero">
+      <p class="article-meta">
+        <time datetime="2025-09-08">08.09.2025</time>
+      </p>
+      <h1>My first Article</h1>
+      
+    </header>
 
-  <p>Hello <strong>World</strong>! This is my first article</p>
+    <p>Hello <strong>World</strong>! This is my first article</p>
 
-</article>
+
+    <p class="article-meta">
+      <a href="/">← Back</a>
+    </p>
+  </article>
+</main>
 
 
     <footer class="site-footer">
       <span>© 2026 Benjamin Thuillier</span>
-      <span><a href="mailto:hello@example.com">hello@example.com</a> · <a href="https://github.com/">GitHub</a></span>
+      <span><a href="mailto:benjaminthuillier@gmail.com">benjaminthuillier@gmail.com</a> · <a href="https://github.com/bthuillier">GitHub</a></span>
     </footer>
 
   </div>

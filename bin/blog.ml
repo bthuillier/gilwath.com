@@ -36,6 +36,58 @@ let compute_link source =
   |> Path.change_extension "html"
 
 (* -------------------------------------------------------------------------- *)
+(* Site-wide configuration                                                    *)
+(* -------------------------------------------------------------------------- *)
+
+(* [Site] mirrors the YAML record stored in [content/site.yml]. The fields are
+   exposed under the [site.*] namespace in every template, both in HTML
+   templates and in markdown bodies (which are pre-rendered with Jingoo, see
+   [render_md]). *)
+module Site : sig
+  type t
+
+  include Required.DATA_READABLE with type t := t
+  include Required.DATA_INJECTABLE with type t := t
+
+  val to_data : t -> Data.t
+end = struct
+  type t =
+    { name : string
+    ; author : string
+    ; email : string
+    ; github : string
+    }
+
+  let entity_name = "Site"
+  let neutral = Result.ok
+    { name = ""; author = ""; email = ""; github = "" }
+
+  let validate =
+    let open Data.Validation in
+    record (fun fields ->
+      let+ name = required fields "name" string
+      and+ author = required fields "author" string
+      and+ email = required fields "email" string
+      and+ github = required fields "github" string in
+      { name; author; email; github })
+
+  let normalize { name; author; email; github } =
+    Data.[
+      "name", string name;
+      "author", string author;
+      "email", string email;
+      "github", string github;
+    ]
+
+  let to_data s = Data.record (normalize s)
+end
+
+let site_path = Path.(content / "site.yml")
+
+let read_site =
+  Yocaml_yaml.Pipeline.read_file_as_metadata (module Site) site_path
+
+(* -------------------------------------------------------------------------- *)
 (* Document kinds                                                             *)
 (* -------------------------------------------------------------------------- *)
 
@@ -47,6 +99,29 @@ module type ARCHETYPE = sig
   include Yocaml.Required.DATA_INJECTABLE
   include Yocaml.Required.DATA_READABLE with type t := t
 end
+
+(* Wraps a [DATA_INJECTABLE] so that templates also see a [site.*] namespace.
+   We carry [Site.t] alongside the page-specific metadata as a pair, then
+   project it into the normalized record under the [site] key. *)
+module With_site (I : Yocaml.Required.DATA_INJECTABLE)
+  : Yocaml.Required.DATA_INJECTABLE with type t = I.t * Site.t = struct
+  type t = I.t * Site.t
+
+  let normalize (inner, site) =
+    ("site", Site.to_data site) :: I.normalize inner
+end
+
+(* Pre-render a markdown body with Jingoo so that [{{ site.* }}] (and any
+   front-matter field) can be referenced inside the .md file itself. We run
+   this *before* the markdown→HTML conversion so that values like email or
+   URLs land cleanly in markdown link syntax. [strict:false] keeps unknown
+   variables from blowing up — useful while front-matter shapes evolve. *)
+let render_md ~metadata content =
+  let parameters =
+    metadata
+    |> List.map (fun (k, v) -> (k, Yocaml_jingoo.from v))
+  in
+  Yocaml_jingoo.render ~strict:false parameters content
 
 let document_sources = function
   | Page -> pages
@@ -87,6 +162,7 @@ let fetch_articles =
 
 let create_document document_kind source =
   let module Archetype = (val document_archetype document_kind) in
+  let module Bundle = With_site (Archetype) in
   let target = document_path document_kind source
   and pipeline =
     let open Task in
@@ -95,14 +171,17 @@ let create_document document_kind source =
       Yocaml_jingoo.read_templates
         Path.[ get_specific_template document_kind
              ; templates / "layout.html" ]
+    and+ site = read_site
     and+ metadata, content =
       Yocaml_yaml.Pipeline.read_file_with_metadata
         (module Archetype)
         source
     in
+    let bundle = (metadata, site) in
     content
+    |> render_md ~metadata:(Bundle.normalize bundle)
     |> Yocaml_markdown.from_string_to_html
-    |> templates (module Archetype) ~metadata
+    |> templates (module Bundle) ~metadata:bundle
   in
   Action.Static.write_file target pipeline
 
@@ -115,6 +194,7 @@ let create_pages = create_documents Page
 let create_articles = create_documents Article
 
 let create_index =
+  let module Bundle = With_site (Archetype.Articles) in
   let source = Path.(content / "index.md") in
   let index_path =
     source
@@ -130,6 +210,7 @@ let create_index =
              ; templates / "page.html"
              ; templates / "layout.html"
              ]
+    and+ site = read_site
     and+ articles = fetch_articles
     and+ metadata, content =
       Yocaml_yaml.Pipeline.read_file_with_metadata
@@ -141,9 +222,11 @@ let create_index =
         ~page:metadata
         ~articles
     in
+    let bundle = (metadata, site) in
     content
+    |> render_md ~metadata:(Bundle.normalize bundle)
     |> Yocaml_markdown.from_string_to_html
-    |> templates (module Archetype.Articles) ~metadata
+    |> templates (module Bundle) ~metadata:bundle
   in
   Action.Static.write_file index_path pipeline
 
