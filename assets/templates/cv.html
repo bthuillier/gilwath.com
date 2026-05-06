@@ -1,0 +1,40 @@
+<main>
+  <header class="cv-header">
+    <h1>{{ site.author }}</h1>
+  </header>
+
+  <p class="cv-contact">
+    <a href="mailto:{{ site.email }}">{{ site.email }}</a>
+    ·
+    <a href="{{ site.github }}">{{ site.github }}</a>
+  </p>
+
+  <section class="cv-section">
+    <h2>Profil</h2>
+    {{safe (yocaml_body) }}
+  </section>
+
+  {% if has_experiences %}
+  <section class="cv-section">
+    <h2>Expérience</h2>
+    {% for experience in experiences %}
+    <div class="cv-entry">
+      <div class="when">
+        <time datetime="{{ experience.start_date.repr.date }}">{{ printf("%02d.%d", experience.start_date.month, experience.start_date.year) }}</time>
+        —
+        {% if experience.has_end_date %}
+        <time datetime="{{ experience.end_date.repr.date }}">{{ printf("%02d.%d", experience.end_date.month, experience.end_date.year) }}</time>
+        {% else %}
+        auj.
+        {% endif %}
+      </div>
+      <div>
+        <h3>{{ experience.role }}</h3>
+        <p class="where">{{ experience.company }}</p>
+        {{safe (experience.body) }}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+</main>

@@ -15,6 +15,8 @@ let content = Path.rel [ "content" ]
 let pages = Path.(content / "pages")
 let articles = Path.(content / "articles")
 
+let experiences = Path.(content / "experiences")
+
 (* -------------------------------------------------------------------------- *)
 (* Helpers                                                                    *)
 (* -------------------------------------------------------------------------- *)
@@ -123,6 +125,92 @@ let render_md ~metadata content =
   in
   Yocaml_jingoo.render ~strict:false parameters content
 
+(* -------------------------------------------------------------------------- *)
+(* Experience archetype + CV page                                             *)
+(* -------------------------------------------------------------------------- *)
+
+(* Note: the record fields are intentionally exposed (no signature ascription)
+   so [fetch_experiences] can read [start_date] when sorting, and [Cv] can
+   normalize values directly. *)
+module Experience = struct
+  type t =
+    { company : string
+    ; role : string
+    ; start_date : Archetype.Datetime.t
+    ; end_date : Archetype.Datetime.t option
+    }
+
+  let entity_name = "Experience"
+
+  (* No sensible neutral value — fail like Article does. *)
+  let neutral =
+    Data.Validation.fail_with ~given:"null" "Cannot be null"
+    |> Result.map_error (fun error ->
+        Required.Validation_error { entity = entity_name; error })
+
+  let validate =
+    let open Data.Validation in
+    record (fun fields ->
+      let+ company = required fields "company" string
+      and+ role = required fields "role" string
+      and+ start_date = required fields "start_date" Archetype.Datetime.validate
+      and+ end_date = optional fields "end_date" Archetype.Datetime.validate in
+      { company; role; start_date; end_date })
+
+  let normalize { company; role; start_date; end_date } =
+    Data.[
+      "company", string company;
+      "role", string role;
+      "start_date", Archetype.Datetime.normalize start_date;
+      "end_date", option Archetype.Datetime.normalize end_date;
+      "has_end_date", bool (Option.is_some end_date);
+    ]
+end
+
+(* Fetches every markdown file under [content/experiences/], converts the body
+   to HTML, and returns a list sorted most-recent-first. The body travels
+   alongside the metadata as a tuple — same pattern as [Archetype.Articles]
+   pairs a URL with each article rather than baking it into [Article.t]. *)
+let fetch_experiences =
+  let open Task in
+  Pipeline.fetch
+    ~only:`Files
+    ~where:is_markdown
+    ~on:`Source
+    (fun file ->
+      let open Eff in
+      let+ metadata, content =
+        Eff.read_file_with_metadata
+          (module Yocaml_yaml)
+          (module Experience)
+          ~on:`Source
+          file
+      in
+      (metadata, Yocaml_markdown.from_string_to_html content))
+    experiences
+  >>| List.sort (fun (a, _) (b, _) ->
+        ~- (Archetype.Datetime.compare a.Experience.start_date b.Experience.start_date))
+
+module Cv = struct
+  type t =
+    { page : Archetype.Page.t
+    ; experiences : (Experience.t * string) list
+    }
+
+  let with_page ~page ~experiences = { page; experiences }
+
+  let normalize { page; experiences } =
+    Archetype.Page.normalize page
+    @ Data.[
+        "experiences",
+          list_of
+            (fun (exp, body) ->
+              record (("body", string body) :: Experience.normalize exp))
+            experiences;
+        "has_experiences", bool (experiences <> []);
+      ]
+end
+
 let document_sources = function
   | Page -> pages
   | Article -> articles
@@ -230,6 +318,41 @@ let create_index =
   in
   Action.Static.write_file index_path pipeline
 
+let create_cv =
+  let module Bundle = With_site (struct
+    type t = Cv.t
+    let normalize = Cv.normalize
+  end) in
+  let source = Path.(content / "cv.md") in
+  let cv_path =
+    source
+    |> Path.move ~into:www
+    |> Path.change_extension "html"
+  in
+  let pipeline =
+    let open Task in
+    let+ () = track_binary
+    and+ templates =
+      Yocaml_jingoo.read_templates
+        Path.[ templates / "cv.html"
+             ; templates / "layout.html"
+             ]
+    and+ site = read_site
+    and+ experiences = fetch_experiences
+    and+ metadata, content =
+      Yocaml_yaml.Pipeline.read_file_with_metadata
+        (module Archetype.Page)
+        source
+    in
+    let cv = Cv.with_page ~page:metadata ~experiences in
+    let bundle = (cv, site) in
+    content
+    |> render_md ~metadata:(Bundle.normalize bundle)
+    |> Yocaml_markdown.from_string_to_html
+    |> templates (module Bundle) ~metadata:bundle
+  in
+  Action.Static.write_file cv_path pipeline
+
 let copy_images =
   let images_path = Path.(www / "images")
   and where = with_ext [ "svg"; "png"; "jpg"; "gif" ] in
@@ -264,6 +387,7 @@ let program () =
   >>= create_pages
   >>= create_articles
   >>= create_index
+  >>= create_cv
   >>= Action.store_cache cache
 
 let () =

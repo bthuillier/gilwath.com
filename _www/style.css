@@ -401,6 +401,13 @@ pre {
   gap: var(--s-2);
 }
 .site-footer a { color: var(--ink-muted); }
+.site-footer .icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -.15em;
+  fill: currentColor;
+}
 
 /* ---------- Print : optimisé pour le CV (A4) ------------------ */
 @media print {
