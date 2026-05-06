@@ -38,51 +38,12 @@ let compute_link source =
   |> Path.change_extension "html"
 
 (* -------------------------------------------------------------------------- *)
-(* Site-wide configuration                                                    *)
+(* Domain modules — defined in the [blog_core] library                        *)
 (* -------------------------------------------------------------------------- *)
 
-(* [Site] mirrors the YAML record stored in [content/site.yml]. The fields are
-   exposed under the [site.*] namespace in every template, both in HTML
-   templates and in markdown bodies (which are pre-rendered with Jingoo, see
-   [render_md]). *)
-module Site : sig
-  type t
-
-  include Required.DATA_READABLE with type t := t
-  include Required.DATA_INJECTABLE with type t := t
-
-  val to_data : t -> Data.t
-end = struct
-  type t =
-    { name : string
-    ; author : string
-    ; email : string
-    ; github : string
-    }
-
-  let entity_name = "Site"
-  let neutral = Result.ok
-    { name = ""; author = ""; email = ""; github = "" }
-
-  let validate =
-    let open Data.Validation in
-    record (fun fields ->
-      let+ name = required fields "name" string
-      and+ author = required fields "author" string
-      and+ email = required fields "email" string
-      and+ github = required fields "github" string in
-      { name; author; email; github })
-
-  let normalize { name; author; email; github } =
-    Data.[
-      "name", string name;
-      "author", string author;
-      "email", string email;
-      "github", string github;
-    ]
-
-  let to_data s = Data.record (normalize s)
-end
+module Site = Blog_core.Site
+module Experience = Blog_core.Experience
+module Cv = Blog_core.Cv
 
 let site_path = Path.(content / "site.yml")
 
@@ -125,48 +86,6 @@ let render_md ~metadata content =
   in
   Yocaml_jingoo.render ~strict:false parameters content
 
-(* -------------------------------------------------------------------------- *)
-(* Experience archetype + CV page                                             *)
-(* -------------------------------------------------------------------------- *)
-
-(* Note: the record fields are intentionally exposed (no signature ascription)
-   so [fetch_experiences] can read [start_date] when sorting, and [Cv] can
-   normalize values directly. *)
-module Experience = struct
-  type t =
-    { company : string
-    ; role : string
-    ; start_date : Archetype.Datetime.t
-    ; end_date : Archetype.Datetime.t option
-    }
-
-  let entity_name = "Experience"
-
-  (* No sensible neutral value — fail like Article does. *)
-  let neutral =
-    Data.Validation.fail_with ~given:"null" "Cannot be null"
-    |> Result.map_error (fun error ->
-        Required.Validation_error { entity = entity_name; error })
-
-  let validate =
-    let open Data.Validation in
-    record (fun fields ->
-      let+ company = required fields "company" string
-      and+ role = required fields "role" string
-      and+ start_date = required fields "start_date" Archetype.Datetime.validate
-      and+ end_date = optional fields "end_date" Archetype.Datetime.validate in
-      { company; role; start_date; end_date })
-
-  let normalize { company; role; start_date; end_date } =
-    Data.[
-      "company", string company;
-      "role", string role;
-      "start_date", Archetype.Datetime.normalize start_date;
-      "end_date", option Archetype.Datetime.normalize end_date;
-      "has_end_date", bool (Option.is_some end_date);
-    ]
-end
-
 (* Fetches every markdown file under [content/experiences/], converts the body
    to HTML, and returns a list sorted most-recent-first. The body travels
    alongside the metadata as a tuple — same pattern as [Archetype.Articles]
@@ -189,27 +108,8 @@ let fetch_experiences =
       (metadata, Yocaml_markdown.from_string_to_html content))
     experiences
   >>| List.sort (fun (a, _) (b, _) ->
-        ~- (Archetype.Datetime.compare a.Experience.start_date b.Experience.start_date))
-
-module Cv = struct
-  type t =
-    { page : Archetype.Page.t
-    ; experiences : (Experience.t * string) list
-    }
-
-  let with_page ~page ~experiences = { page; experiences }
-
-  let normalize { page; experiences } =
-    Archetype.Page.normalize page
-    @ Data.[
-        "experiences",
-          list_of
-            (fun (exp, body) ->
-              record (("body", string body) :: Experience.normalize exp))
-            experiences;
-        "has_experiences", bool (experiences <> []);
-      ]
-end
+        ~- (Archetype.Datetime.compare
+              (Experience.start_date a) (Experience.start_date b)))
 
 let document_sources = function
   | Page -> pages
