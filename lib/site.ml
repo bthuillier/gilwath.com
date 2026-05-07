@@ -21,20 +21,8 @@ type t =
 
 let entity_name = "Site"
 
-let neutral =
-  Result.ok
-    { name = ""
-    ; author = ""
-    ; email = ""
-    ; github = ""
-    ; linkedin = ""
-    ; bluesky = ""
-    ; url = ""
-    ; description = ""
-    ; lang = "en"
-    ; og_image = ""
-    ; theme_color = "#ffffff"
-    }
+(* No sensible neutral value — [content/site.yml] is required. *)
+let neutral = Metadata.required entity_name
 
 let validate =
   let open Data.Validation in

@@ -14,11 +14,8 @@ type t =
 
 let entity_name = "Experience"
 
-(* No sensible neutral value — fail like Article does. *)
-let neutral =
-  Data.Validation.fail_with ~given:"null" "Cannot be null"
-  |> Result.map_error (fun error ->
-      Required.Validation_error { entity = entity_name; error })
+(* No sensible neutral value — front matter is required. *)
+let neutral = Metadata.required entity_name
 
 let start_date e = e.start_date
 
