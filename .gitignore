@@ -7,6 +7,7 @@ _opam/
 # Generated site output
 _site/
 _public/
+_www/
 
 # OCaml / merlin
 *.install

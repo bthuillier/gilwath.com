@@ -315,6 +315,13 @@ let copy_images =
     ~where images
     (Action.copy_file ~into:images_path)
 
+(* Copies [assets/CNAME] verbatim into [_www/CNAME]. GitHub Pages reads this
+   file from the deploy artifact to bind the site to the custom domain
+   (gilwath.com). Keeping the source in [assets/] means it travels with the
+   build pipeline rather than being a stray file in the generated output. *)
+let copy_cname =
+  Action.copy_file ~into:www Path.(assets / "CNAME")
+
 let create_css =
   let css_path = Path.(www / "style.css") in
   let pipeline =
@@ -338,6 +345,7 @@ let program () =
   let cache = Path.(www / ".cache") in
   Action.restore_cache cache
   >>= copy_images
+  >>= copy_cname
   >>= create_css
   >>= create_pages
   >>= create_articles
