@@ -13,15 +13,18 @@ let words_per_minute = 200
 let count_words s =
   let n = String.length s in
   let rec loop i in_word acc =
-    if i >= n then if in_word then acc + 1 else acc
-    else
+    if i >= n
+    then if in_word then acc + 1 else acc
+    else (
       match s.[i] with
       | ' ' | '\t' | '\n' | '\r' ->
-          loop (i + 1) false (if in_word then acc + 1 else acc)
-      | _ -> loop (i + 1) true acc
+        loop (i + 1) false (if in_word then acc + 1 else acc)
+      | _ -> loop (i + 1) true acc)
   in
   loop 0 false 0
+;;
 
 let estimate content =
   let words = count_words content in
   max 1 ((words + words_per_minute - 1) / words_per_minute)
+;;

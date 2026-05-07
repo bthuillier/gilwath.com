@@ -9,6 +9,6 @@ type t
 include Required.DATA_READABLE with type t := t
 include Required.DATA_INJECTABLE with type t := t
 
-val start_date : t -> Archetype.Datetime.t
 (** [start_date e] — exposed so callers can sort experiences chronologically
     without reaching into the record. *)
+val start_date : t -> Archetype.Datetime.t
