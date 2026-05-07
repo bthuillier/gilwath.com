@@ -1,5 +1,10 @@
 (executable
-  (public_name blog)
-  (libraries 
-    yocaml yocaml_unix yocaml_yaml yocaml_markdown
-    yocaml_jingoo yocaml_syndication blog_core))
+ (public_name blog)
+ (libraries
+  yocaml
+  yocaml_unix
+  yocaml_yaml
+  yocaml_markdown
+  yocaml_jingoo
+  yocaml_syndication
+  blog_core))

@@ -1,6 +1,6 @@
-(** Approximate reading time for a piece of prose, in minutes. The estimate
-    is the standard word-count divided by an average reading speed; we round
-    up so a 30-second read still says ["1 min"] rather than ["0 min"]. *)
+(** Approximate reading time for a piece of prose, in minutes. The estimate is
+    the standard word-count divided by an average reading speed; we round up so
+    a 30-second read still says ["1 min"] rather than ["0 min"]. *)
 
 (* 200 wpm sits in the middle of the commonly-cited 200–250 range for adult
    silent reading of prose. Technical writing skews slower (closer to 150),
@@ -17,7 +17,7 @@ let count_words s =
     else
       match s.[i] with
       | ' ' | '\t' | '\n' | '\r' ->
-        loop (i + 1) false (if in_word then acc + 1 else acc)
+          loop (i + 1) false (if in_word then acc + 1 else acc)
       | _ -> loop (i + 1) true acc
   in
   loop 0 false 0
