@@ -4,6 +4,7 @@ company: iAdvize
 company_logo: /images/iadvize.svg
 start_date: 2018-04-01
 end_date: 2019-10-31
+skills: [scala, kafka, grpc, postgresql]
 ---
 
 Several missions around backend development and data processing:

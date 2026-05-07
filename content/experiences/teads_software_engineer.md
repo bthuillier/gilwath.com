@@ -4,6 +4,7 @@ company: Teads.tv
 company_logo: /images/teads.svg
 start_date: 2011-09-01
 end_date: 2014-12-31
+skills: [scala, php, akka, apache storm, cassandra]
 ---
 
 Development of an algorithm for video ad broadcasting on the web:

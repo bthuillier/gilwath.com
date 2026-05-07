@@ -4,6 +4,7 @@ team: Scale Team
 company: Conduktor
 company_logo: /images/conduktor.svg
 start_date: 2024-01-01
+skills: [scala, kafka, zio, postgresql, typescript, react]
 ---
 
 Development of the Conduktor Scale platform for managing Apache Kafka infrastructures in enterprise environments.

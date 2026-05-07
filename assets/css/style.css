@@ -352,6 +352,24 @@ pre {
 .cv-entry .where { color: var(--ink-muted); font-style: italic; font-size: .95rem; }
 .cv-entry p, .cv-entry ul { font-size: .95rem; margin-top: .5em; }
 
+.cv-skills {
+  list-style: none;
+  padding: 0;
+  margin: .4em 0 .6em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+.cv-skills li {
+  font-size: .8rem;
+  color: var(--ink-muted);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: .1rem .55rem;
+  font-variant: small-caps;
+  letter-spacing: .02em;
+}
+
 @media (max-width: 600px) {
   .cv-entry { grid-template-columns: 1fr; gap: .25rem; }
   .post-list li { grid-template-columns: 1fr; gap: .15rem; }
@@ -392,6 +410,7 @@ pre {
   h1 { font-size: 20pt; }
   .cv-section { margin-bottom: 1rem; page-break-inside: avoid; }
   .cv-entry { page-break-inside: avoid; }
+  .cv-skills li { border-color: #999; padding: 0 .4rem; }
   a { color: inherit; text-decoration: none; }
   .cv-contact a::after {
     content: " (" attr(href) ")";

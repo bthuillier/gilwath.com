@@ -4,6 +4,7 @@ company: iAdvize
 company_logo: /images/iadvize.svg
 start_date: 2016-03-01
 end_date: 2016-12-31
+skills: [scala, postgresql, play]
 ---
 
 - Integrated Instagram into the iAdvize conversational commerce platform

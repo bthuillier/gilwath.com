@@ -4,6 +4,7 @@ company: Conduktor
 company_logo: /images/conduktor.svg
 start_date: 2021-12-01
 end_date: 2024-01-31
+skills: [scala, kafka, zio, postgresql]
 ---
 
 Senior Developer on multiple Conduktor products:

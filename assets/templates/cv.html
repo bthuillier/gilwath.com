@@ -31,6 +31,13 @@
       <div>
         <h3>{{ experience.role }}</h3>
         <p class="where">{{ experience.company }}</p>
+        {% if experience.skills %}
+        <ul class="cv-skills">
+          {% for skill in experience.skills %}
+          <li>{{ skill }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
         {{safe (experience.body) }}
       </div>
     </div>
