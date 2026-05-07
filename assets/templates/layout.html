@@ -1,12 +1,64 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ site.lang }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="YOCaml">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="{{ site.theme_color }}">
+
+  {% if page_title is string %}
+  <title>{{ page_title }} — {{ site.name }}</title>
+  {% elseif title is string %}
+  <title>{{ title }} — {{ site.name }}</title>
+  {% else %}
   <title>{{ site.name }}</title>
-  <meta name="description" content="{{ description }}">
+  {% endif %}
+
+  <meta name="description" content="{% if description %}{{ description }}{% else %}{{ site.description }}{% endif %}">
+  <meta name="author" content="{{ site.author }}">
+
+  <link rel="canonical" href="{{ site.url }}">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+  <!-- Open Graph -->
+  <meta property="og:site_name" content="{{ site.name }}">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{% if page_title is string %}{{ page_title }}{% elseif title is string %}{{ title }}{% else %}{{ site.name }}{% endif %}">
+  <meta property="og:description" content="{% if description %}{{ description }}{% else %}{{ site.description }}{% endif %}">
+  <meta property="og:url" content="{{ site.url }}">
+  <meta property="og:image" content="{{ site.url }}{{ site.og_image }}">
+  <meta property="og:locale" content="{{ site.lang }}">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% if page_title is string %}{{ page_title }}{% elseif title is string %}{{ title }}{% else %}{{ site.name }}{% endif %}">
+  <meta name="twitter:description" content="{% if description %}{{ description }}{% else %}{{ site.description }}{% endif %}">
+  <meta name="twitter:image" content="{{ site.url }}{{ site.og_image }}">
+
+  <!-- Federated identity verification (rel=me) -->
+  <link rel="me" href="{{ site.github }}">
+  <link rel="me" href="{{ site.linkedin }}">
+  <link rel="me" href="{{ site.bluesky }}">
+  <link rel="me" href="mailto:{{ site.email }}">
+
   <link rel="stylesheet" href="/style.css">
+
+  <!-- Structured data: a single Person graph for search engines. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "{{ site.author }}",
+    "url": "{{ site.url }}",
+    "email": "{{ site.email }}",
+    "sameAs": [
+      "{{ site.github }}",
+      "{{ site.linkedin }}",
+      "{{ site.bluesky }}"
+    ]
+  }
+  </script>
 </head>
 <body>
   <div class="page">
@@ -24,6 +76,17 @@
 
     <footer class="site-footer">
       <span>© 2026 {{ site.author }}</span>
+      <span class="socials">
+        <a href="{{ site.github }}" rel="me" aria-label="GitHub" title="GitHub">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="/images/icons.svg#github"/></svg>
+        </a>
+        <a href="{{ site.linkedin }}" rel="me" aria-label="LinkedIn" title="LinkedIn">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="/images/icons.svg#linkedin"/></svg>
+        </a>
+        <a href="{{ site.bluesky }}" rel="me" aria-label="Bluesky" title="Bluesky">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="/images/icons.svg#bluesky"/></svg>
+        </a>
+      </span>
       <span class="generator">
         <a href="https://ocaml.org" title="OCaml website">
           <svg class="icon" aria-hidden="true" focusable="false"><use href="/images/icons.svg#ocaml"/></svg>

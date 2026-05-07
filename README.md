@@ -47,6 +47,19 @@ dune exec blog
 └── dune-project
 ```
 
+## Refreshing the OG image
+
+The social-preview image lives at `assets/images/og-default.png` and is
+hand-rendered from `assets/og-default.svg`. To regenerate it after editing the
+SVG (requires `librsvg`):
+
+```sh
+brew install librsvg   # one-time
+rsvg-convert -w 1200 -h 630 assets/og-default.svg -o assets/images/og-default.png
+```
+
+CI just copies the committed PNG; the conversion is a local step.
+
 ## License
 
 [MIT](LICENSE) — Benjamin Thuillier

@@ -352,22 +352,11 @@ pre {
 .cv-entry .where { color: var(--ink-muted); font-style: italic; font-size: .95rem; }
 .cv-entry p, .cv-entry ul { font-size: .95rem; margin-top: .5em; }
 
-.cv-skills {
-  list-style: none;
-  padding: 0;
-  margin: .4em 0 .6em;
-  display: flex;
-  flex-wrap: wrap;
-  gap: .35rem;
-}
-.cv-skills li {
+.cv-entry .when .cv-skills {
+  margin: .4rem 0 0;
   font-size: .8rem;
   color: var(--ink-muted);
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  padding: .1rem .55rem;
-  font-variant: small-caps;
-  letter-spacing: .02em;
+  line-height: 1.45;
 }
 
 @media (max-width: 600px) {
@@ -395,6 +384,22 @@ pre {
   vertical-align: -.15em;
   fill: currentColor;
 }
+.site-footer .socials {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.site-footer .socials a {
+  display: inline-flex;
+  align-items: center;
+  transition: color .15s ease;
+}
+.site-footer .socials a:hover { color: var(--ink); }
+.site-footer .socials .icon {
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -.2em;
+}
 
 /* ---------- Print : optimisé pour le CV (A4) ------------------ */
 @media print {
@@ -410,7 +415,6 @@ pre {
   h1 { font-size: 20pt; }
   .cv-section { margin-bottom: 1rem; page-break-inside: avoid; }
   .cv-entry { page-break-inside: avoid; }
-  .cv-skills li { border-color: #999; padding: 0 .4rem; }
   a { color: inherit; text-decoration: none; }
   .cv-contact a::after {
     content: " (" attr(href) ")";

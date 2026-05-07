@@ -10,13 +10,13 @@
   </p>
 
   <section class="cv-section">
-    <h2>Profil</h2>
+    <h2>Profile</h2>
     {{safe (yocaml_body) }}
   </section>
 
   {% if has_experiences %}
   <section class="cv-section">
-    <h2>Expérience</h2>
+    <h2>Experience</h2>
     {% for experience in experiences %}
     <div class="cv-entry">
       <div class="when">
@@ -25,19 +25,15 @@
         {% if experience.has_end_date %}
         <time datetime="{{ experience.end_date.repr.date }}">{{ printf("%02d.%d", experience.end_date.month, experience.end_date.year) }}</time>
         {% else %}
-        auj.
+        present
+        {% endif %}
+        {% if experience.skills %}
+        <p class="cv-skills">{{ experience.skills | join(" · ") }}</p>
         {% endif %}
       </div>
       <div>
         <h3>{{ experience.role }}</h3>
         <p class="where">{{ experience.company }}</p>
-        {% if experience.skills %}
-        <ul class="cv-skills">
-          {% for skill in experience.skills %}
-          <li>{{ skill }}</li>
-          {% endfor %}
-        </ul>
-        {% endif %}
         {{safe (experience.body) }}
       </div>
     </div>

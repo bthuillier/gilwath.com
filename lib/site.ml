@@ -10,12 +10,31 @@ type t =
   ; author : string
   ; email : string
   ; github : string
+  ; linkedin : string
+  ; bluesky : string
+  ; url : string
+  ; description : string
+  ; lang : string
+  ; og_image : string
+  ; theme_color : string
   }
 
 let entity_name = "Site"
 
-let neutral = Result.ok
-  { name = ""; author = ""; email = ""; github = "" }
+let neutral =
+  Result.ok
+    { name = ""
+    ; author = ""
+    ; email = ""
+    ; github = ""
+    ; linkedin = ""
+    ; bluesky = ""
+    ; url = ""
+    ; description = ""
+    ; lang = "en"
+    ; og_image = ""
+    ; theme_color = "#ffffff"
+    }
 
 let validate =
   let open Data.Validation in
@@ -23,15 +42,34 @@ let validate =
     let+ name = required fields "name" string
     and+ author = required fields "author" string
     and+ email = required fields "email" string
-    and+ github = required fields "github" string in
-    { name; author; email; github })
+    and+ github = required fields "github" string
+    and+ linkedin = optional_or ~default:"" fields "linkedin" string
+    and+ bluesky = optional_or ~default:"" fields "bluesky" string
+    and+ url = required fields "url" string
+    and+ description = required fields "description" string
+    and+ lang = optional_or ~default:"en" fields "lang" string
+    and+ og_image = optional_or ~default:"" fields "og_image" string
+    and+ theme_color = optional_or ~default:"#ffffff" fields "theme_color" string in
+    { name; author; email; github; linkedin; bluesky
+    ; url; description; lang; og_image; theme_color })
 
-let normalize { name; author; email; github } =
+let normalize
+    { name; author; email; github; linkedin; bluesky
+    ; url; description; lang; og_image; theme_color } =
   Data.[
     "name", string name;
     "author", string author;
     "email", string email;
     "github", string github;
+    "linkedin", string linkedin;
+    "bluesky", string bluesky;
+    "url", string url;
+    "description", string description;
+    "lang", string lang;
+    "og_image", string og_image;
+    "theme_color", string theme_color;
   ]
 
 let to_data s = Data.record (normalize s)
+
+let url s = s.url

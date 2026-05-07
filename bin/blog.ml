@@ -322,6 +322,52 @@ let copy_images =
 let copy_cname =
   Action.copy_file ~into:www Path.(assets / "CNAME")
 
+(* SVG favicon — referenced by [/favicon.svg] in layout.html. Living in
+   [assets/] (not [assets/images/]) so it lands at the site root, where
+   browsers expect it. *)
+let copy_favicon =
+  Action.copy_file ~into:www Path.(assets / "favicon.svg")
+
+(* Permissive robots.txt with a sitemap pointer. Crawlers find sitemap.xml
+   through this hint even without manual webmaster-tools registration. *)
+let create_robots =
+  let robots_path = Path.(www / "robots.txt") in
+  let pipeline =
+    let open Task in
+    let+ () = track_binary
+    and+ site = read_site in
+    Printf.sprintf "User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n"
+      (Site.url site)
+  in
+  Action.Static.write_file robots_path pipeline
+
+(* sitemap.xml — covers the four top-level pages plus every article. The
+   article list is the same one used to build the index/blog listings; its
+   URLs are absolute paths under [/articles/], which we prefix with the
+   site origin to satisfy the sitemap schema. *)
+let create_sitemap =
+  let sitemap_path = Path.(www / "sitemap.xml") in
+  let pipeline =
+    let open Task in
+    let+ () = track_binary
+    and+ site = read_site
+    and+ articles = fetch_articles in
+    let url loc =
+      Printf.sprintf "  <url><loc>%s%s</loc></url>" (Site.url site) loc
+    in
+    let static_urls = List.map url [ "/"; "/blog.html"; "/cv.html" ] in
+    let article_urls =
+      List.map (fun (path, _article) -> url (Path.to_string path)) articles
+    in
+    String.concat "\n"
+      ([ {|<?xml version="1.0" encoding="UTF-8"?>|}
+       ; {|<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">|} ]
+       @ static_urls
+       @ article_urls
+       @ [ "</urlset>" ])
+  in
+  Action.Static.write_file sitemap_path pipeline
+
 let create_css =
   let css_path = Path.(www / "style.css") in
   let pipeline =
@@ -346,12 +392,15 @@ let program () =
   Action.restore_cache cache
   >>= copy_images
   >>= copy_cname
+  >>= copy_favicon
   >>= create_css
   >>= create_pages
   >>= create_articles
   >>= create_index
   >>= create_blog
   >>= create_cv
+  >>= create_robots
+  >>= create_sitemap
   >>= Action.store_cache cache
 
 let () =

@@ -3,4 +3,19 @@ author: Benjamin Thuillier
 email: benjaminthuillier@gmail.com
 github: https://github.com/bthuillier
 linkedin: https://www.linkedin.com/in/benjamin-thuillier/
-bluesky: https://bsky.app/profile/bthuillier.bsky.social
+bluesky: https://bsky.app/profile/gilwath.com
+
+# Canonical site origin — used for canonical URLs, OG, sitemap.
+url: https://gilwath.com
+
+# Default description, shown when a page does not provide its own.
+description: Notes and a CV from Benjamin Thuillier — functional programmer at Conduktor, working on Kafka governance.
+
+# Default content language. Pages can override via [lang:] in their front matter.
+lang: en
+
+# Default Open Graph image, used when a page does not provide its own.
+og_image: /images/og-default.png
+
+# Browser UI accent (matches the site's --paper background).
+theme_color: "#fdfcf7"
