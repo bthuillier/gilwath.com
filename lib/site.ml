@@ -61,3 +61,7 @@ let normalize
 let to_data s = Data.record (normalize s)
 
 let url s = s.url
+let name s = s.name
+let author s = s.author
+let email s = s.email
+let description s = s.description

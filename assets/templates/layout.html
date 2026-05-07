@@ -20,6 +20,7 @@
 
   <link rel="canonical" href="{{ site.url }}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="alternate" type="application/atom+xml" title="{{ site.name }}" href="/atom.xml">
 
   <!-- Open Graph -->
   <meta property="og:site_name" content="{{ site.name }}">
@@ -85,6 +86,9 @@
         </a>
         <a href="{{ site.bluesky }}" rel="me" aria-label="Bluesky" title="Bluesky">
           <svg class="icon" aria-hidden="true" focusable="false"><use href="/images/icons.svg#bluesky"/></svg>
+        </a>
+        <a href="/atom.xml" type="application/atom+xml" aria-label="Atom feed" title="Atom feed">
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="/images/icons.svg#rss"/></svg>
         </a>
       </span>
       <span class="generator">

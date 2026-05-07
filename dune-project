@@ -23,6 +23,7 @@
   (yocaml_yaml (>= 2.5.0))
   (yocaml_markdown (>= 2.5.0))
   (yocaml_jingoo (>= 2.5.0))
+  (yocaml_syndication (>= 2.5.0))
   
   ;; Dev setup
   (utop :with-dev-setup)

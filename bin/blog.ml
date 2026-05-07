@@ -52,6 +52,54 @@ module Experience = Blog_core.Experience
 module Cv = Blog_core.Cv
 module Reading_time = Blog_core.Reading_time
 
+module Feed = struct
+  let path = "atom.xml"
+
+  let owner site =
+    Yocaml_syndication.Person.make
+      ~uri:(Site.url site) ~email:(Site.email site)
+      (Site.author site)
+
+  let authors site = Nel.singleton (owner site)
+
+  let article_to_entry ~site (url, article) =
+    let open Yocaml.Archetype in
+    let open Yocaml_syndication in
+    let page = Article.page article in
+    let title = Article.title article
+    and content_url =
+      Site.url site ^ Path.to_string url
+
+    and updated =
+      Datetime.make (Article.date article)
+
+    and categories =
+      List.map Category.make (Page.tags page)
+
+    and summary =
+      Option.map Atom.text (Page.description page)
+    in
+
+    let links =
+      [ Atom.alternate content_url ~title ]
+    in
+    Atom.entry
+      ~links
+      ~categories
+      ?summary
+      ~updated
+      ~id:content_url
+      ~title:(Atom.text title) ()
+
+  let make ~site entries =
+    let open Yocaml_syndication in
+    Atom.feed ~title:(Atom.text (Site.name site))
+      ~subtitle:(Atom.text (Site.description site))
+      ~updated:(Atom.updated_from_entries ())
+      ~authors:(authors site) ~id:(Site.url site)
+      (article_to_entry ~site) entries
+end
+
 (* Not a top-level [let]: [_ Eff.t] performs its effects on construction
    (via [let*]), so we'd raise [Effect.Unhandled] before the runtime
    handler is installed. *)
@@ -169,6 +217,19 @@ let render_through templates fields content =
   |> templates (module Fields : Required.DATA_INJECTABLE
                   with type t = (string * Data.t) list)
        ~metadata:fields
+
+let create_feed ~site =
+  let feed_path =  Path.(www / Feed.path)
+  and pipeline =
+    let open Task in
+    let+ () = track_binary
+    and+ () = track_site
+    and+ articles = fetch_articles in
+    articles
+    |> Feed.make ~site
+    |> Yocaml_syndication.Xml.to_string
+  in
+  Action.Static.write_file feed_path pipeline
 
 let create_document ~site document_kind source =
   let module Archetype = (val document_archetype document_kind) in
@@ -354,6 +415,7 @@ let program () =
   >>= create_cv ~site
   >>= create_robots ~site
   >>= create_sitemap ~site
+  >>= create_feed ~site
   >>= Action.store_cache cache
 
 let () =

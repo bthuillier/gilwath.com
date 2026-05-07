@@ -19,3 +19,16 @@ val to_data : t -> Data.t
     so build actions (sitemap, robots.txt) can prefix relative paths without
     going through [to_data]. *)
 val url : t -> string
+
+(** [name s] — the site's display name (used as the Atom feed title). *)
+val name : t -> string
+
+(** [author s] — the site author's full name. *)
+val author : t -> string
+
+(** [email s] — the site author's contact email. *)
+val email : t -> string
+
+(** [description s] — the default site description (used as the Atom feed
+    subtitle). *)
+val description : t -> string

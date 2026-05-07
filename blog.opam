@@ -20,6 +20,7 @@ depends: [
   "yocaml_yaml" {>= "2.5.0"}
   "yocaml_markdown" {>= "2.5.0"}
   "yocaml_jingoo" {>= "2.5.0"}
+  "yocaml_syndication" {>= "2.5.0"}
   "utop" {with-dev-setup}
   "ocamlformat" {with-dev-setup}
   "ocp-indent" {with-dev-setup}

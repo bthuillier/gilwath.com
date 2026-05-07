@@ -387,7 +387,7 @@ pre {
 .site-footer .socials {
   display: inline-flex;
   align-items: center;
-  gap: var(--s-2);
+  gap: var(--s-1);
 }
 .site-footer .socials a {
   display: inline-flex;
