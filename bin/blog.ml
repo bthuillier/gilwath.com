@@ -285,6 +285,25 @@ let copy_images =
   and where = with_ext [ "svg"; "png"; "jpg"; "gif" ] in
   Batch.iter_files ~where images (Action.copy_file ~into:images_path)
 
+(* The OG preview is hand-authored in [assets/og-default.svg]; we rasterize
+   it through [rsvg-convert] (must be on PATH). [Cmd.w] watches the SVG so
+   the cache invalidates whenever it changes; the [target] is filled in by
+   [Action.exec_cmd], like in the official [d2] example. *)
+let og_svg = Path.(assets / "og-default.svg")
+
+let invoke_rsvg target =
+  let open Cmd in
+  make "rsvg-convert"
+    [
+      param ~prefix:"-" "w" (i 1200);
+      param ~prefix:"-" "h" (i 630);
+      arg (w og_svg);
+      param ~prefix:"-" "o" target;
+    ]
+
+let render_og_image =
+  Action.exec_cmd invoke_rsvg Path.(www / "images" / "og-default.png")
+
 (* GitHub Pages reads [_www/CNAME] to bind the site to gilwath.com. *)
 let copy_cname = Action.copy_file ~into:www Path.(assets / "CNAME")
 
@@ -351,7 +370,8 @@ let program () =
   let* site = read_site () in
   let cache = Path.(www / ".cache") in
   Action.restore_cache cache >>= copy_images >>= copy_cname >>= copy_favicon
-  >>= create_css >>= create_pages ~site >>= create_articles ~site
+  >>= render_og_image >>= create_css >>= create_pages ~site
+  >>= create_articles ~site
   >>= create_index ~site >>= create_blog ~site >>= create_cv ~site
   >>= create_robots ~site >>= create_sitemap ~site >>= create_feed ~site
   >>= Action.store_cache cache

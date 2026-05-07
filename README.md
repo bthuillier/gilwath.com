@@ -47,18 +47,19 @@ dune exec blog
 └── dune-project
 ```
 
-## Refreshing the OG image
+## OG image
 
-The social-preview image lives at `assets/images/og-default.png` and is
-hand-rendered from `assets/og-default.svg`. To regenerate it after editing the
-SVG (requires `librsvg`):
+The social-preview image is rasterized from `assets/og-default.svg` to
+`_www/images/og-default.png` at build time via `rsvg-convert` (see
+`bin/blog.ml`). The Yocaml cache only re-runs the conversion when the SVG
+changes.
+
+`librsvg` must be on `PATH`:
 
 ```sh
-brew install librsvg   # one-time
-rsvg-convert -w 1200 -h 630 assets/og-default.svg -o assets/images/og-default.png
+brew install librsvg          # macOS
+apt-get install librsvg2-bin  # Debian/Ubuntu (CI)
 ```
-
-CI just copies the committed PNG; the conversion is a local step.
 
 ## License
 
