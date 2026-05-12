@@ -40,4 +40,31 @@
     {% endfor %}
   </section>
   {% endif %}
+
+  {% if has_education %}
+  <section class="cv-section">
+    <h2>Education</h2>
+    {% for entry in education %}
+    <div class="cv-entry">
+      <div class="when">
+        <time datetime="{{ entry.start_date.repr.date }}">{{ printf("%02d.%d", entry.start_date.month, entry.start_date.year) }}</time>
+        —
+        {% if entry.has_end_date %}
+        <time datetime="{{ entry.end_date.repr.date }}">{{ printf("%02d.%d", entry.end_date.month, entry.end_date.year) }}</time>
+        {% else %}
+        present
+        {% endif %}
+        {% if entry.has_location %}
+        <p class="cv-skills">{{ entry.location }}</p>
+        {% endif %}
+      </div>
+      <div>
+        <h3>{{ entry.degree }}{% if entry.has_field %} — {{ entry.field }}{% endif %}</h3>
+        <p class="where">{{ entry.school }}</p>
+        {{safe (entry.body) }}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
 </main>

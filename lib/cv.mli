@@ -1,16 +1,18 @@
 (** The CV page: a [Yocaml.Archetype.Page.t] (front-matter + body) carrying a
-    list of [Experience]s, each paired with its rendered HTML body. *)
+    list of [Experience]s and a list of [Education] entries. *)
 
 open Yocaml
 
 type t
 
-(** Bundle a page and its experiences. The page metadata is read separately (it
-    has its own [Archetype.Page] front matter); the experiences come from the
-    [content/experiences/] folder. *)
+(** Bundle a page with its experiences and education. The page metadata is
+    read separately (it has its own [Archetype.Page] front matter); the
+    experiences come from [content/experiences/] and the education entries
+    from [content/education/]. *)
 val with_page
   :  page:Archetype.Page.t
   -> experiences:(Experience.t * string) list
+  -> education:(Education.t * string) list
   -> t
 
 (** [normalize cv] — exposed for use as the [DATA_INJECTABLE.normalize] of a

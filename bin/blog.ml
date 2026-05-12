@@ -13,6 +13,7 @@ let content = Path.rel [ "content" ]
 let pages = Path.(content / "pages")
 let articles = Path.(content / "articles")
 let experiences = Path.(content / "experiences")
+let education = Path.(content / "education")
 let site_path = Path.(content / "site.yml")
 
 (* -------------------------------------------------------------------------- *)
@@ -44,6 +45,7 @@ let compute_link source =
 
 module Site = Blog_core.Site
 module Experience = Blog_core.Experience
+module Education = Blog_core.Education
 module Cv = Blog_core.Cv
 module Reading_time = Blog_core.Reading_time
 
@@ -136,8 +138,14 @@ let render_md ~metadata content =
   Yocaml_jingoo.render ~strict:false parameters content
 ;;
 
-(* (Experience.t * html body) list, sorted most-recent-first. *)
-let fetch_experiences =
+(* Fetch every markdown file under [folder] as an [Entry.t], parsed with
+   [Entry], sorted most-recent-first by [start_date]. *)
+let fetch_dated
+  (type a)
+  (module Entry : Required.DATA_READABLE with type t = a)
+  ~start_date
+  folder
+  =
   let open Task in
   Pipeline.fetch
     ~only:`Files
@@ -148,16 +156,24 @@ let fetch_experiences =
        let+ metadata, content =
          Eff.read_file_with_metadata
            (module Yocaml_yaml)
-           (module Experience)
+           (module Entry)
            ~on:`Source
            file
        in
        metadata, Yocaml_markdown.from_string_to_html content)
-    experiences
+    folder
   >>| List.sort (fun (a, _) (b, _) ->
-    ~-(Archetype.Datetime.compare
-         (Experience.start_date a)
-         (Experience.start_date b)))
+    ~-(Archetype.Datetime.compare (start_date a) (start_date b)))
+;;
+
+(* (Experience.t * html body) list, sorted most-recent-first. *)
+let fetch_experiences =
+  fetch_dated (module Experience) ~start_date:Experience.start_date experiences
+;;
+
+(* (Education.t * html body) list, sorted most-recent-first. *)
+let fetch_education =
+  fetch_dated (module Education) ~start_date:Education.start_date education
 ;;
 
 let document_sources = function
@@ -321,12 +337,13 @@ let create_cv ~site =
       Yocaml_jingoo.read_templates
         Path.[ templates / "cv.html"; templates / "layout.html" ]
     and+ experiences = fetch_experiences
+    and+ education = fetch_education
     and+ metadata, content =
       Yocaml_yaml.Pipeline.read_file_with_metadata
         (module Archetype.Page)
         source
     in
-    let cv = Cv.with_page ~page:metadata ~experiences in
+    let cv = Cv.with_page ~page:metadata ~experiences ~education in
     let fields = inject_site site (Cv.normalize cv) in
     render_through templates fields content
   in

@@ -1,18 +1,20 @@
 (** The CV page: a [Page] (front-matter + body) carrying a list of
-    [Experience]s, each paired with its rendered HTML body. The pairing pattern
-    mirrors [Yocaml.Archetype.Articles], which carries a URL alongside each
-    [Article] without baking it into the type. *)
+    [Experience]s and a list of [Education] entries, each paired with its
+    rendered HTML body. The pairing pattern mirrors [Yocaml.Archetype.Articles],
+    which carries a URL alongside each [Article] without baking it into the
+    type. *)
 
 open Yocaml
 
 type t =
   { page : Archetype.Page.t
   ; experiences : (Experience.t * string) list
+  ; education : (Education.t * string) list
   }
 
-let with_page ~page ~experiences = { page; experiences }
+let with_page ~page ~experiences ~education = { page; experiences; education }
 
-let normalize { page; experiences } =
+let normalize { page; experiences; education } =
   Archetype.Page.normalize page
   @ Data.
       [ ( "experiences"
@@ -21,5 +23,11 @@ let normalize { page; experiences } =
                record (("body", string body) :: Experience.normalize exp))
             experiences )
       ; "has_experiences", bool (experiences <> [])
+      ; ( "education"
+        , list_of
+            (fun (edu, body) ->
+               record (("body", string body) :: Education.normalize edu))
+            education )
+      ; "has_education", bool (education <> [])
       ]
 ;;
