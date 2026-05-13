@@ -183,7 +183,61 @@ pre {
   line-height: 1.5;
   margin: var(--s-3) 0;
   font-size: .9rem;
+  border-left: 2px solid var(--rule);
 }
+
+/* ---------- Syntax highlighting -------------------------------
+   Yocaml's markdown renderer emits TextMate-grammar class names
+   (e.g. .ocaml-keyword, .ocaml-string-quoted-double). Palette is
+   Solarized-light, scoped to <pre><code> so inline code stays
+   neutral. Tokens we don't style fall through to var(--ink). */
+pre code {
+  /* Solarized base palette, paper-friendly */
+  --syn-keyword:  #b58900;  /* yellow */
+  --syn-string:   #859900;  /* green  */
+  --syn-type:     #268bd2;  /* blue   */
+  --syn-function: #6c71c4;  /* violet */
+  --syn-constant: #d33682;  /* magenta */
+  --syn-comment:  #93a1a1;  /* base1  */
+  --syn-punct:    var(--ink-muted);
+}
+
+/* Keywords: let, type, in, match, fun, module, open, etc. */
+pre code .ocaml-keyword,
+pre code .ocaml-keyword-other { color: var(--syn-keyword); }
+
+/* Operators (=, ->, |, +, etc.) — slightly muted so structure
+   wins over decoration. */
+pre code .ocaml-keyword-operator { color: var(--syn-keyword); }
+
+/* Strings — full string spans share the same class. */
+pre code .ocaml-string-quoted-double { color: var(--syn-string); }
+
+/* Types & built-in type names (int, string, bool, list…). */
+pre code .ocaml-support-type { color: var(--syn-type); }
+
+/* Function bindings — `validate` in `let validate = …`. */
+pre code .ocaml-entity-name-function-binding {
+  color: var(--syn-function);
+}
+
+/* Capitalised identifiers (Option, Data, …) and constants. */
+pre code .ocaml-constant-language,
+pre code .ocaml-constant-language-capital-identifier,
+pre code .ocaml-constant-language-list,
+pre code .ocaml-constant-language-polymorphic-variant {
+  color: var(--syn-constant);
+}
+
+/* Punctuation (commas, semicolons, dots) — keep readable but
+   recessive; the grammar groups them as keyword-other-ocaml,
+   which would otherwise inherit the keyword colour. */
+pre code .ocaml-keyword-other-ocaml { color: var(--syn-punct); }
+
+/* The catch-all source span is the default text colour; reset
+   it explicitly so it doesn't inherit a parent token's colour
+   when the grammar wraps source inside a coloured span. */
+pre code .ocaml-source { color: var(--ink); }
 
 /* Note de bas de page (style Tufte/Gwern) */
 .footnote-ref {
