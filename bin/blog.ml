@@ -1,22 +1,6 @@
 open Yocaml
 
 (* -------------------------------------------------------------------------- *)
-(* Paths                                                                      *)
-(* -------------------------------------------------------------------------- *)
-
-let www = Path.rel [ "_www" ]
-let assets = Path.rel [ "assets" ]
-let css = Path.(assets / "css")
-let images = Path.(assets / "images")
-let templates = Path.(assets / "templates")
-let content = Path.rel [ "content" ]
-let pages = Path.(content / "pages")
-let articles = Path.(content / "articles")
-let experiences = Path.(content / "experiences")
-let education = Path.(content / "education")
-let site_path = Path.(content / "site.yml")
-
-(* -------------------------------------------------------------------------- *)
 (* Helpers                                                                    *)
 (* -------------------------------------------------------------------------- *)
 
@@ -29,10 +13,6 @@ let is_markdown = with_ext [ "md"; "markdown"; "mdown" ]
 let track_binary =
   Sys.executable_name |> Yocaml.Path.from_string |> Pipeline.track_file
 ;;
-
-(* The value is read once at program start; this keeps it in the dep set
-   so editing [site.yml] reruns every page. *)
-let track_site = Pipeline.track_file site_path
 
 let compute_link source =
   let into = Path.abs [ "articles" ] in
@@ -48,9 +28,9 @@ module Experience = Blog_core.Experience
 module Education = Blog_core.Education
 module Cv = Blog_core.Cv
 module Reading_time = Blog_core.Reading_time
+module Resolver = Blog_core.Resolver
 
 module Feed = struct
-  let path = "atom.xml"
 
   let owner site =
     Yocaml_syndication.Person.make
@@ -97,12 +77,12 @@ end
 (* Not a top-level [let]: [_ Eff.t] performs its effects on construction
    (via [let*]), so we'd raise [Effect.Unhandled] before the runtime
    handler is installed. *)
-let read_site () =
+let read_site resolver () =
   Eff.read_file_as_metadata
     (module Yocaml_yaml)
     (module Site)
     ~on:`Source
-    site_path
+    (Resolver.Source.site resolver)
 ;;
 
 let inject_site site fields = ("site", Site.to_data site) :: fields
@@ -138,6 +118,10 @@ let render_md ~metadata content =
   Yocaml_jingoo.render ~strict:false parameters content
 ;;
 
+  (* The value is read once at program start; this keeps it in the dep set
+   so editing [site.yml] reruns every page. *)
+  let track_site resolver = Pipeline.track_file (Resolver.Source.site resolver)
+
 (* Fetch every markdown file under [folder] as an [Entry.t], parsed with
    [Entry], sorted most-recent-first by [start_date]. *)
 let fetch_dated
@@ -167,30 +151,31 @@ let fetch_dated
 ;;
 
 (* (Experience.t * html body) list, sorted most-recent-first. *)
-let fetch_experiences =
-  fetch_dated (module Experience) ~start_date:Experience.start_date experiences
+let fetch_experiences resolver =
+  fetch_dated (module Experience) ~start_date:Experience.start_date (Resolver.Source.experiences resolver)
 ;;
 
 (* (Education.t * html body) list, sorted most-recent-first. *)
-let fetch_education =
-  fetch_dated (module Education) ~start_date:Education.start_date education
+let fetch_education resolver =
+  fetch_dated (module Education) ~start_date:Education.start_date (Resolver.Source.education resolver)
 ;;
 
-let document_sources = function
-  | Page -> pages
-  | Article -> articles
+let document_sources resolver = function
+  | Page -> (Resolver.Source.pages resolver)
+  | Article -> (Resolver.Source.articles resolver)
 ;;
 
-let document_path document_kind path =
+let document_path resolver document_kind path =
   let into =
     match document_kind with
-    | Page -> www
-    | Article -> Path.(www / "articles")
+    | Page -> Resolver.Target.page resolver
+    | Article -> Resolver.Target.article resolver
   in
-  path |> Path.move ~into |> Path.change_extension "html"
+  path |> into
 ;;
 
-let get_specific_template document_kind =
+let get_specific_template resolver document_kind =
+  let templates = Resolver.Source.templates resolver in
   let file =
     match document_kind with
     | Page -> "page.html"
@@ -208,12 +193,12 @@ let document_archetype : document_kind -> (module ARCHETYPE) = function
 (* Articles index                                                             *)
 (* -------------------------------------------------------------------------- *)
 
-let fetch_articles =
+let fetch_articles resolver =
   Archetype.Articles.fetch
     ~where:is_markdown
     ~compute_link
     (module Yocaml_yaml)
-    articles
+    (Resolver.Source.articles resolver)
 ;;
 
 (* -------------------------------------------------------------------------- *)
@@ -239,28 +224,28 @@ let render_through templates fields content =
        ~metadata:fields
 ;;
 
-let create_feed ~site =
-  let feed_path = Path.(www / Feed.path)
-  and pipeline =
+let create_feed resolver ~site =
+
+  let pipeline =
     let open Task in
     let+ () = track_binary
-    and+ () = track_site
-    and+ articles = fetch_articles in
+    and+ () = track_site resolver
+    and+ articles = fetch_articles resolver in
     articles |> Feed.make ~site |> Yocaml_syndication.Xml.to_string
   in
-  Action.Static.write_file feed_path pipeline
+  Action.Static.write_file (Resolver.Target.atom resolver) pipeline
 ;;
 
-let create_document ~site document_kind source =
+let create_document resolver ~site document_kind source =
   let module Archetype = (val document_archetype document_kind) in
-  let target = document_path document_kind source
+  let target = document_path resolver document_kind source
   and pipeline =
     let open Task in
     let+ () = track_binary
-    and+ () = track_site
+    and+ () = track_site resolver
     and+ templates =
       Yocaml_jingoo.read_templates
-        Path.[ get_specific_template document_kind; templates / "layout.html" ]
+        Path.[ get_specific_template resolver document_kind; (Resolver.Source.templates resolver) / "layout.html" ]
     and+ metadata, content =
       Yocaml_yaml.Pipeline.read_file_with_metadata (module Archetype) source
     in
@@ -271,28 +256,28 @@ let create_document ~site document_kind source =
   Action.Static.write_file target pipeline
 ;;
 
-let create_documents ~site document_kind =
-  let sources = document_sources document_kind in
+let create_documents resolver ~site document_kind =
+  let sources = document_sources resolver document_kind in
   Batch.iter_files
     ~where:is_markdown
     sources
-    (create_document ~site document_kind)
+    (create_document resolver ~site document_kind)
 ;;
 
-let create_pages ~site = create_documents ~site Page
-let create_articles ~site = create_documents ~site Article
+let create_pages resolver ~site = create_documents resolver ~site Page
+let create_articles resolver  ~site = create_documents resolver ~site Article
 
 (* Shared by [/] and [/blog.html]: a [Page] enriched with the article list. *)
-let create_listing ~site ~source ~into:dest_dir ~templates:template_chain =
+let create_listing resolver ~site ~source ~into:dest_dir ~templates:template_chain =
   let listing_path =
     source |> Path.move ~into:dest_dir |> Path.change_extension "html"
   in
   let pipeline =
     let open Task in
     let+ () = track_binary
-    and+ () = track_site
+    and+ () = track_site resolver
     and+ templates = Yocaml_jingoo.read_templates template_chain
-    and+ articles = fetch_articles
+    and+ articles = fetch_articles resolver
     and+ metadata, content =
       Yocaml_yaml.Pipeline.read_file_with_metadata
         (module Archetype.Page)
@@ -305,39 +290,41 @@ let create_listing ~site ~source ~into:dest_dir ~templates:template_chain =
   Action.Static.write_file listing_path pipeline
 ;;
 
-let create_index ~site =
+let create_index resolver ~site =
   create_listing
+    resolver
     ~site
-    ~source:Path.(content / "index.md")
-    ~into:www
+    ~source:(Resolver.Source.index resolver)
+    ~into:(Resolver.Target.target_root resolver)
     ~templates:
       Path.
-        [ templates / "index.html"
-        ; templates / "page.html"
-        ; templates / "layout.html"
+        [ (Resolver.Source.templates resolver) / "index.html"
+        ; (Resolver.Source.templates resolver) / "page.html"
+        ; (Resolver.Source.templates resolver) / "layout.html"
         ]
 ;;
 
-let create_blog ~site =
+let create_blog resolver ~site =
   create_listing
+    resolver
     ~site
-    ~source:Path.(content / "blog.md")
-    ~into:www
-    ~templates:Path.[ templates / "blog.html"; templates / "layout.html" ]
+    ~source:(Resolver.Source.blog resolver)
+    ~into:(Resolver.Target.target_root resolver)
+    ~templates:Path.[ (Resolver.Source.templates resolver) / "blog.html"; (Resolver.Source.templates resolver) / "layout.html" ]
 ;;
 
-let create_cv ~site =
-  let source = Path.(content / "cv.md") in
-  let cv_path = source |> Path.move ~into:www |> Path.change_extension "html" in
+let create_cv resolver ~site =
+  let source = Resolver.Source.cv resolver in
+  let cv_path = Resolver.Target.cv resolver in
   let pipeline =
     let open Task in
     let+ () = track_binary
-    and+ () = track_site
+    and+ () = track_site resolver
     and+ templates =
       Yocaml_jingoo.read_templates
-        Path.[ templates / "cv.html"; templates / "layout.html" ]
-    and+ experiences = fetch_experiences
-    and+ education = fetch_education
+        Path.[ (Resolver.Source.templates resolver) / "cv.html"; (Resolver.Source.templates resolver) / "layout.html" ]
+    and+ experiences = fetch_experiences resolver
+    and+ education = fetch_education resolver
     and+ metadata, content =
       Yocaml_yaml.Pipeline.read_file_with_metadata
         (module Archetype.Page)
@@ -350,41 +337,41 @@ let create_cv ~site =
   Action.Static.write_file cv_path pipeline
 ;;
 
-let copy_images =
-  let images_path = Path.(www / "images")
+let copy_images resolver =
+  let images_path = Resolver.Target.images resolver
   and where = with_ext [ "svg"; "png"; "jpg"; "gif" ] in
-  Batch.iter_files ~where images (Action.copy_file ~into:images_path)
+  Batch.iter_files ~where (Resolver.Source.images resolver) (Action.copy_file ~into:images_path)
 ;;
 
 (* The OG preview is hand-authored in [assets/og-default.svg]; we rasterize
    it through [rsvg-convert] (must be on PATH). [Cmd.w] watches the SVG so
    the cache invalidates whenever it changes; the [target] is filled in by
    [Action.exec_cmd], like in the official [d2] example. *)
-let og_svg = Path.(assets / "og-default.svg")
+let og_svg resolver = Path.((Resolver.Source.assets resolver) / "og-default.svg")
 
-let invoke_rsvg target =
+let invoke_rsvg resolver target =
   let open Cmd in
   make
     "rsvg-convert"
     [ param ~prefix:"-" "w" (i 1200)
     ; param ~prefix:"-" "h" (i 630)
-    ; arg (w og_svg)
+    ; arg (w (og_svg resolver))
     ; param ~prefix:"-" "o" target
     ]
 ;;
 
-let render_og_image =
-  Action.exec_cmd invoke_rsvg Path.(www / "images" / "og-default.png")
+let render_og_image resolver =
+  Action.exec_cmd (invoke_rsvg resolver) Path.(Resolver.Target.images resolver / "og-default.png")
 ;;
 
 (* GitHub Pages reads [_www/CNAME] to bind the site to gilwath.com. *)
-let copy_cname = Action.copy_file ~into:www Path.(assets / "CNAME")
+let copy_cname resolver = Action.copy_file ~into:(Resolver.Target.target_root resolver) Path.((Resolver.Source.assets resolver) / "CNAME")
 
 (* Lives at the site root (not [assets/images/]) so browsers find it. *)
-let copy_favicon = Action.copy_file ~into:www Path.(assets / "favicon.svg")
+let copy_favicon resolver = Action.copy_file ~into:(Resolver.Target.target_root resolver) Path.((Resolver.Source.assets resolver) / "favicon.svg")
 
-let create_robots ~site =
-  let robots_path = Path.(www / "robots.txt") in
+let create_robots resolver ~site =
+  let robots_path = Path.((Resolver.Target.target_root resolver) / "robots.txt") in
   let body =
     Printf.sprintf
       "User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n"
@@ -393,7 +380,7 @@ let create_robots ~site =
   let pipeline =
     let open Task in
     let+ () = track_binary
-    and+ () = track_site in
+    and+ () = track_site resolver in
     body
   in
   Action.Static.write_file robots_path pipeline
@@ -401,8 +388,8 @@ let create_robots ~site =
 
 (* The article paths are absolute under [/articles/]; the schema requires a
    full URL, so we prefix them with the site origin. *)
-let create_sitemap ~site =
-  let sitemap_path = Path.(www / "sitemap.xml") in
+let create_sitemap resolver ~site =
+  let sitemap_path = Path.((Resolver.Target.target_root resolver) / "sitemap.xml") in
   let url loc =
     Printf.sprintf "  <url><loc>%s%s</loc></url>" (Site.url site) loc
   in
@@ -410,8 +397,8 @@ let create_sitemap ~site =
   let pipeline =
     let open Task in
     let+ () = track_binary
-    and+ () = track_site
-    and+ articles = fetch_articles in
+    and+ () = track_site resolver
+    and+ articles = fetch_articles resolver in
     let article_urls =
       List.map (fun (path, _article) -> url (Path.to_string path)) articles
     in
@@ -427,8 +414,9 @@ let create_sitemap ~site =
   Action.Static.write_file sitemap_path pipeline
 ;;
 
-let create_css =
-  let css_path = Path.(www / "style.css") in
+let create_css resolver =
+  let css_path = Resolver.Target.style_css resolver in
+  let css = Resolver.Source.css resolver in
   let pipeline =
     let open Task in
     let+ () = track_binary
@@ -446,29 +434,30 @@ let create_css =
 (* Program                                                                    *)
 (* -------------------------------------------------------------------------- *)
 
-let program () =
+let program resolver () =
   let open Eff in
-  let* site = read_site () in
-  let cache = Path.(www / ".cache") in
+  let* site = read_site resolver () in
+  let cache = Resolver.Target.cache resolver in
   Action.restore_cache cache
-  >>= copy_images
-  >>= copy_cname
-  >>= copy_favicon
-  >>= render_og_image
-  >>= create_css
-  >>= create_pages ~site
-  >>= create_articles ~site
-  >>= create_index ~site
-  >>= create_blog ~site
-  >>= create_cv ~site
-  >>= create_robots ~site
-  >>= create_sitemap ~site
-  >>= create_feed ~site
+  >>= copy_images resolver
+  >>= copy_cname resolver
+  >>= copy_favicon resolver
+  >>= render_og_image resolver
+  >>= create_css resolver
+  >>= create_pages resolver ~site
+  >>= create_articles resolver ~site
+  >>= create_index resolver ~site 
+  >>= create_blog resolver ~site
+  >>= create_cv resolver ~site
+  >>= create_robots resolver ~site
+  >>= create_sitemap resolver ~site
+  >>= create_feed resolver~site
   >>= Action.store_cache cache
 ;;
 
 let () =
+  let resolver = Resolver.make() in
   match Sys.argv.(1) with
-  | "server" -> Yocaml_unix.serve ~level:`Info ~target:www ~port:8000 program
-  | _ | (exception _) -> Yocaml_unix.run ~level:`Debug program
+  | "server" -> Yocaml_unix.serve ~level:`Info ~target:(Resolver.Target.target_root resolver) ~port:8000 (program resolver)
+  | _ | (exception _) -> Yocaml_unix.run ~level:`Debug (program resolver)
 ;;
