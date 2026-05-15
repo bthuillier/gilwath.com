@@ -31,7 +31,6 @@ module Reading_time = Blog_core.Reading_time
 module Resolver = Blog_core.Resolver
 
 module Feed = struct
-
   let owner site =
     Yocaml_syndication.Person.make
       ~uri:(Site.url site)
@@ -118,17 +117,25 @@ let render_md ~metadata content =
   Yocaml_jingoo.render ~strict:false parameters content
 ;;
 
-  (* The value is read once at program start; this keeps it in the dep set
+(* The value is read once at program start; this keeps it in the dep set
    so editing [site.yml] reruns every page. *)
-  let track_site resolver = Pipeline.track_file (Resolver.Source.site resolver)
+let track_site resolver = Pipeline.track_file (Resolver.Source.site resolver)
+
+(* The dep prelude shared by every site-aware pipeline. *)
+let track_deps resolver =
+  let open Task in
+  let+ () = track_binary
+  and+ () = track_site resolver in
+  ()
+;;
 
 (* Fetch every markdown file under [folder] as an [Entry.t], parsed with
    [Entry], sorted most-recent-first by [start_date]. *)
 let fetch_dated
-  (type a)
-  (module Entry : Required.DATA_READABLE with type t = a)
-  ~start_date
-  folder
+      (type a)
+      (module Entry : Required.DATA_READABLE with type t = a)
+      ~start_date
+      folder
   =
   let open Task in
   Pipeline.fetch
@@ -152,17 +159,23 @@ let fetch_dated
 
 (* (Experience.t * html body) list, sorted most-recent-first. *)
 let fetch_experiences resolver =
-  fetch_dated (module Experience) ~start_date:Experience.start_date (Resolver.Source.experiences resolver)
+  fetch_dated
+    (module Experience)
+    ~start_date:Experience.start_date
+    (Resolver.Source.experiences resolver)
 ;;
 
 (* (Education.t * html body) list, sorted most-recent-first. *)
 let fetch_education resolver =
-  fetch_dated (module Education) ~start_date:Education.start_date (Resolver.Source.education resolver)
+  fetch_dated
+    (module Education)
+    ~start_date:Education.start_date
+    (Resolver.Source.education resolver)
 ;;
 
 let document_sources resolver = function
-  | Page -> (Resolver.Source.pages resolver)
-  | Article -> (Resolver.Source.articles resolver)
+  | Page -> Resolver.Source.pages resolver
+  | Article -> Resolver.Source.articles resolver
 ;;
 
 let document_path resolver document_kind path =
@@ -225,11 +238,9 @@ let render_through templates fields content =
 ;;
 
 let create_feed resolver ~site =
-
   let pipeline =
     let open Task in
-    let+ () = track_binary
-    and+ () = track_site resolver
+    let+ () = track_deps resolver
     and+ articles = fetch_articles resolver in
     articles |> Feed.make ~site |> Yocaml_syndication.Xml.to_string
   in
@@ -241,11 +252,13 @@ let create_document resolver ~site document_kind source =
   let target = document_path resolver document_kind source
   and pipeline =
     let open Task in
-    let+ () = track_binary
-    and+ () = track_site resolver
+    let+ () = track_deps resolver
     and+ templates =
       Yocaml_jingoo.read_templates
-        Path.[ get_specific_template resolver document_kind; (Resolver.Source.templates resolver) / "layout.html" ]
+        Path.
+          [ get_specific_template resolver document_kind
+          ; Resolver.Source.templates resolver / "layout.html"
+          ]
     and+ metadata, content =
       Yocaml_yaml.Pipeline.read_file_with_metadata (module Archetype) source
     in
@@ -265,17 +278,22 @@ let create_documents resolver ~site document_kind =
 ;;
 
 let create_pages resolver ~site = create_documents resolver ~site Page
-let create_articles resolver  ~site = create_documents resolver ~site Article
+let create_articles resolver ~site = create_documents resolver ~site Article
 
 (* Shared by [/] and [/blog.html]: a [Page] enriched with the article list. *)
-let create_listing resolver ~site ~source ~into:dest_dir ~templates:template_chain =
+let create_listing
+      resolver
+      ~site
+      ~source
+      ~into:dest_dir
+      ~templates:template_chain
+  =
   let listing_path =
     source |> Path.move ~into:dest_dir |> Path.change_extension "html"
   in
   let pipeline =
     let open Task in
-    let+ () = track_binary
-    and+ () = track_site resolver
+    let+ () = track_deps resolver
     and+ templates = Yocaml_jingoo.read_templates template_chain
     and+ articles = fetch_articles resolver
     and+ metadata, content =
@@ -297,11 +315,9 @@ let create_index resolver ~site =
     ~source:(Resolver.Source.index resolver)
     ~into:(Resolver.Target.target_root resolver)
     ~templates:
-      Path.
-        [ (Resolver.Source.templates resolver) / "index.html"
-        ; (Resolver.Source.templates resolver) / "page.html"
-        ; (Resolver.Source.templates resolver) / "layout.html"
-        ]
+      (Resolver.Source.resolve_templates
+         resolver
+         [ "index.html"; "page.html"; "layout.html" ])
 ;;
 
 let create_blog resolver ~site =
@@ -310,7 +326,10 @@ let create_blog resolver ~site =
     ~site
     ~source:(Resolver.Source.blog resolver)
     ~into:(Resolver.Target.target_root resolver)
-    ~templates:Path.[ (Resolver.Source.templates resolver) / "blog.html"; (Resolver.Source.templates resolver) / "layout.html" ]
+    ~templates:
+      (Resolver.Source.resolve_templates
+         resolver
+         [ "blog.html"; "layout.html" ])
 ;;
 
 let create_cv resolver ~site =
@@ -318,11 +337,12 @@ let create_cv resolver ~site =
   let cv_path = Resolver.Target.cv resolver in
   let pipeline =
     let open Task in
-    let+ () = track_binary
-    and+ () = track_site resolver
+    let+ () = track_deps resolver
     and+ templates =
       Yocaml_jingoo.read_templates
-        Path.[ (Resolver.Source.templates resolver) / "cv.html"; (Resolver.Source.templates resolver) / "layout.html" ]
+        (Resolver.Source.resolve_templates
+           resolver
+           [ "cv.html"; "layout.html" ])
     and+ experiences = fetch_experiences resolver
     and+ education = fetch_education resolver
     and+ metadata, content =
@@ -340,14 +360,17 @@ let create_cv resolver ~site =
 let copy_images resolver =
   let images_path = Resolver.Target.images resolver
   and where = with_ext [ "svg"; "png"; "jpg"; "gif" ] in
-  Batch.iter_files ~where (Resolver.Source.images resolver) (Action.copy_file ~into:images_path)
+  Batch.iter_files
+    ~where
+    (Resolver.Source.images resolver)
+    (Action.copy_file ~into:images_path)
 ;;
 
 (* The OG preview is hand-authored in [assets/og-default.svg]; we rasterize
    it through [rsvg-convert] (must be on PATH). [Cmd.w] watches the SVG so
    the cache invalidates whenever it changes; the [target] is filled in by
    [Action.exec_cmd], like in the official [d2] example. *)
-let og_svg resolver = Path.((Resolver.Source.assets resolver) / "og-default.svg")
+let og_svg resolver = Path.(Resolver.Source.assets resolver / "og-default.svg")
 
 let invoke_rsvg resolver target =
   let open Cmd in
@@ -361,17 +384,27 @@ let invoke_rsvg resolver target =
 ;;
 
 let render_og_image resolver =
-  Action.exec_cmd (invoke_rsvg resolver) Path.(Resolver.Target.images resolver / "og-default.png")
+  Action.exec_cmd
+    (invoke_rsvg resolver)
+    Path.(Resolver.Target.images resolver / "og-default.png")
+;;
+
+let copy_asset_to_root name resolver =
+  Action.copy_file
+    ~into:(Resolver.Target.target_root resolver)
+    Path.(Resolver.Source.assets resolver / name)
 ;;
 
 (* GitHub Pages reads [_www/CNAME] to bind the site to gilwath.com. *)
-let copy_cname resolver = Action.copy_file ~into:(Resolver.Target.target_root resolver) Path.((Resolver.Source.assets resolver) / "CNAME")
+let copy_cname = copy_asset_to_root "CNAME"
 
 (* Lives at the site root (not [assets/images/]) so browsers find it. *)
-let copy_favicon resolver = Action.copy_file ~into:(Resolver.Target.target_root resolver) Path.((Resolver.Source.assets resolver) / "favicon.svg")
+let copy_favicon = copy_asset_to_root "favicon.svg"
 
 let create_robots resolver ~site =
-  let robots_path = Path.((Resolver.Target.target_root resolver) / "robots.txt") in
+  let robots_path =
+    Path.(Resolver.Target.target_root resolver / "robots.txt")
+  in
   let body =
     Printf.sprintf
       "User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n"
@@ -379,8 +412,7 @@ let create_robots resolver ~site =
   in
   let pipeline =
     let open Task in
-    let+ () = track_binary
-    and+ () = track_site resolver in
+    let+ () = track_deps resolver in
     body
   in
   Action.Static.write_file robots_path pipeline
@@ -389,15 +421,16 @@ let create_robots resolver ~site =
 (* The article paths are absolute under [/articles/]; the schema requires a
    full URL, so we prefix them with the site origin. *)
 let create_sitemap resolver ~site =
-  let sitemap_path = Path.((Resolver.Target.target_root resolver) / "sitemap.xml") in
+  let sitemap_path =
+    Path.(Resolver.Target.target_root resolver / "sitemap.xml")
+  in
   let url loc =
     Printf.sprintf "  <url><loc>%s%s</loc></url>" (Site.url site) loc
   in
   let static_urls = List.map url [ "/"; "/blog.html"; "/cv.html" ] in
   let pipeline =
     let open Task in
-    let+ () = track_binary
-    and+ () = track_site resolver
+    let+ () = track_deps resolver
     and+ articles = fetch_articles resolver in
     let article_urls =
       List.map (fun (path, _article) -> url (Path.to_string path)) articles
@@ -446,18 +479,23 @@ let program resolver () =
   >>= create_css resolver
   >>= create_pages resolver ~site
   >>= create_articles resolver ~site
-  >>= create_index resolver ~site 
+  >>= create_index resolver ~site
   >>= create_blog resolver ~site
   >>= create_cv resolver ~site
   >>= create_robots resolver ~site
   >>= create_sitemap resolver ~site
-  >>= create_feed resolver~site
+  >>= create_feed resolver ~site
   >>= Action.store_cache cache
 ;;
 
 let () =
-  let resolver = Resolver.make() in
+  let resolver = Resolver.make () in
   match Sys.argv.(1) with
-  | "server" -> Yocaml_unix.serve ~level:`Info ~target:(Resolver.Target.target_root resolver) ~port:8000 (program resolver)
+  | "server" ->
+    Yocaml_unix.serve
+      ~level:`Info
+      ~target:(Resolver.Target.target_root resolver)
+      ~port:8000
+      (program resolver)
   | _ | (exception _) -> Yocaml_unix.run ~level:`Debug (program resolver)
 ;;

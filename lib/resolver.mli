@@ -2,8 +2,8 @@ open Yocaml
 
 type t
 
-val make :
-     ?source_folder:Path.t
+val make
+  :  ?source_folder:Path.t
   -> ?target_folder:Path.t
   -> ?server_folder:Path.t
   -> unit
@@ -17,6 +17,7 @@ module Source : sig
   val images : t -> Path.t
   val css : t -> Path.t
   val templates : t -> Path.t
+  val resolve_templates : t -> string list -> Path.t list
 
   (* Content *)
   val content : t -> Path.t
