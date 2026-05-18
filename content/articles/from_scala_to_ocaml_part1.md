@@ -8,19 +8,19 @@ date: 2026-05-30
 
 Thanks to [@xvw](https://github.com/xvw) for introducing me to OCaml. Since this blog uses an OCaml static site generator named YOCaml, I thought learning more about OCaml would be a good idea, and a good way to share my experience with other people who want to learn it too.
 
-In this first part, I will talk briefly about how to build a project in both languages. But first, let's talk about the two languages and their ecosystems — mostly paraphrasing their respective websites and Wikipedia pages.
+In this first part, I will talk briefly about how to build a project in both languages. But first, let's talk about the two languages and their ecosystems, mostly paraphrasing their respective websites and Wikipedia pages.
 
 ## Scala
 
-Scala is a general-purpose programming language that supports both object-oriented and functional programming paradigms. At its inception, it was designed to be a better Java, but it has since evolved into a language used for a wide range of applications. Its main target is the JVM — Scala is de facto compatible with Java and its libraries — but Scala can also target JavaScript via Scala.js and native code via LLVM with Scala Native. Scala is known for its powerful type system; its creators took a lot of inspiration from Haskell, and also from other languages like OCaml. We are currently at Scala 3, a major release that brings a lot of new features and improvements to the language, including an optional new syntax that is more concise and easier to read.
+Scala is a general-purpose programming language that supports both object-oriented and functional programming paradigms. At its inception, it was designed to be a better Java, but it has since evolved into a language used for a wide range of applications. Its main target is the JVM, with Scala being de facto compatible with Java and its libraries, but Scala can also target JavaScript via Scala.js and native code via LLVM with Scala Native. Scala is known for its powerful type system; its creators took a lot of inspiration from Haskell, and also from other languages like OCaml. We are currently at Scala 3, a major release that brings a lot of new features and improvements to the language, including an optional new syntax that is more concise and easier to read.
 
 ## OCaml
 
-OCaml is a general-purpose programming language that supports functional, imperative, and object-oriented programming paradigms. It is a statically typed language with type inference, which means that the compiler can automatically deduce the types of expressions without requiring explicit type annotations. OCaml is known for its powerful type system, which includes features such as algebraic data types, pattern matching, and higher-order functions. OCaml is also known for its performance, as it compiles to native code and has a garbage collector that can be tuned for low-latency applications. OCaml has a strong ecosystem of libraries and tools, including the OPAM package manager and the Dune build system.
+OCaml is a general-purpose programming language that supports functional, imperative, and object-oriented programming paradigms. It is a statically typed language with type inference, which means that the compiler can usually deduce the types of expressions without requiring explicit type annotations. OCaml's inference is *principal*, meaning that when a type can be inferred, the compiler picks the most general one: for example, `let f x = x` is inferred as `'a -> 'a`, and `let f g x = g x` as `('a -> 'b) -> 'a -> 'b`. OCaml is known for its powerful type system, which includes features such as algebraic data types, pattern matching, and higher-order functions. OCaml is also known for its performance, as it compiles to native code and has a garbage collector that can be tuned for low-latency applications. OCaml has a strong ecosystem of libraries and tools, including the OPAM package manager and the Dune build system.
 
 ## Build system and package manager
 
-Both Scala and OCaml have their own build systems and package managers. On the Scala side, several build tools coexist: sbt, mill, gradle, maven, and also scala-cli, which has been integrated into the language since a minor version of Scala 3. In OCaml, the package manager and the build system are clearly separated: OPAM handles dependencies, while Dune takes care of building. OPAM also lets you easily manage your OCaml versions alongside your dependencies, whereas in a Scala project you typically need a separate tool like SDKMAN to manage your Java version, with dependencies handled by the build system, which most of the time delegates to coursier under the hood.
+Both Scala and OCaml have their own build systems and package managers. On the Scala side, several build tools coexist: sbt, mill, gradle, maven, and also scala-cli, which has been integrated into the language since a minor version of Scala 3. In OCaml, the package manager and the build system have traditionally been separated: OPAM handles dependencies, while Dune takes care of building (though [Dune now also offers its own package-management features](https://dune.readthedocs.io/en/stable/explanation/package-management.html)). OPAM also lets you easily manage your OCaml versions alongside your dependencies, whereas in a Scala project you typically need a separate tool like SDKMAN to manage your Java version, with dependencies handled by the build system, which most of the time delegates to coursier under the hood.
 
 ```
      SCALA                              OCAML
@@ -38,9 +38,11 @@ Both Scala and OCaml have their own build systems and package managers. On the S
                                   │   Dune   │ (build)
                                   └──────────┘
 
-3 tools, overlapping roles        2 tools, clean separation
+3 tools, overlapping roles        2 tools, traditionally separated
 sbt orchestrates everything       OPAM and Dune cooperate
                                   via generated .opam files
+                                  (Dune now also offers some
+                                  package-management features)
 ```
 
 ## Now creating a simple hello world with both languages
@@ -133,3 +135,7 @@ To run it, simply run `dune exec ./bin/main.exe` and you will see the output of 
 As a Scala developer, I found OCaml's tooling refreshingly straightforward and just as easy to use as Scala's. The split between OPAM and Dune is not really a problem in practice: Dune manages the `.opam` file for you, and OPAM's role for version management is similar to SDKMAN in the JVM world or nvm in the Node.js world. I came away pleasantly surprised by how modern the OCaml tooling feels, and I'm looking forward to learning more about the language and its ecosystem.
 
 That wraps up this first part. The next part will be about creating a simple CRUD HTTP API with some in-memory data.
+
+## Acknowledgements
+
+A big thank you to [@xvw](https://github.com/xvw) for reviewing this article and sharing valuable feedback and OCaml insights.
