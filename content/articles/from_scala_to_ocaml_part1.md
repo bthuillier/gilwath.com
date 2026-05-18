@@ -42,3 +42,90 @@ Both Scala and OCaml have their own build systems and package managers. On the S
 sbt orchestrates everything       OPAM and Dune cooperate
                                   via generated .opam files
 ```
+
+## Now creating a simple hellow world with both languages
+
+in both languages, you can create a project with a simple command, for Scala you can use scala seed project with sbt like this
+```bash
+sbt new scala/scala3.g8
+A template to demonstrate a minimal Scala 3 application
+
+name [Scala 3 Project Template]: scala-play
+```
+and you will have a simple project made by sbt, with a sbt file that will look like this
+```scala
+val scala3Version = "3.8.3"
+
+lazy val root = project
+  .in(file("."))
+  .settings(
+    name := "scala-play",
+    version := "0.1.0-SNAPSHOT",
+
+    scalaVersion := scala3Version,
+
+    libraryDependencies += "org.scalameta" %% "munit" % "1.3.0" % Test
+  )
+```
+and a simple main located at `src/main/scala/Main.scala` file that will look like this 
+```scala
+@main def hello(): Unit =
+  println("Hello world!")
+  println(msg)
+
+def msg = "I was compiled by Scala 3. :)"
+```
+and if you want to run it, you can simply run the command `sbt run` and you will see the output of the program.
+
+
+and for OCAML, you can use dune to create a simple project like this, you can if you want use opam to fix which version of OCaml you want to use like this
+
+```bash
+opam switch create ocaml-5.4.0 5.4.0 // or if you already have it installed
+opam switch ocaml-5.4.0 // switch to the version you want to use
+eval $(opam env) // will set the environment variables for the version you just switched to
+opam install dune // install dune if you don't have it already for the ocaml version you just switched to
+```
+
+and then you can create a simple dune project like this
+```bash
+dune init proj ocaml-play
+```
+and you will have a simple project made by dune, with a dune file that will look like this
+
+```lisp
+(lang dune 3.22)
+
+(name ocaml-play)
+
+(generate_opam_files true)
+
+(source
+ (github username/reponame))
+
+(authors "Author Name <author@example.com>")
+
+(maintainers "Maintainer Name <maintainer@example.com>")
+
+(license LICENSE)
+
+(documentation https://url/to/documentation)
+
+(package
+ (name ocaml-play)
+ (synopsis "A short synopsis")
+ (description "A longer description")
+ (depends ocaml)
+ (tags
+  ("add topics" "to describe" your project)))
+
+; See the complete stanza docs at https://dune.readthedocs.io/en/stable/reference/dune-project/index.html
+```
+and a simple main located at `src/main.ml` file that will look like this
+```ocaml
+let () = print_endline "Hello, World!"
+```
+and if you want to run it, you can simply run the command `dune exec ./src/main.exe` and you will see the output of the program.
+
+
+So now we have finished the introduction, the next part will be about how to create a simple/CRUD http api with some in memory data.
