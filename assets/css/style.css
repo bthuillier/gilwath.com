@@ -24,8 +24,8 @@
   --font-sans:   ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", sans-serif;
 
   /* Dimensions */
-  --measure:     38rem;   /* largeur de lecture confortable */
-  --measure-wide: 52rem;  /* CV, tableaux */
+  --measure:     46rem;   /* largeur de lecture confortable */
+  --measure-wide: 60rem;  /* CV, tableaux */
   --leading:     1.65;
 
   /* Échelle d'espace (multiples cohérents) */
