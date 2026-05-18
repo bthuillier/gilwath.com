@@ -6,7 +6,7 @@ date: 2026-05-30
 
 ## Introduction
 
-Thanks to @xvw for introducing me to OCaml. Since this blog uses an OCaml static site generator named YOCaml, I thought learning more about OCaml would be a good idea, and a good way to share my experience with other people who want to learn it too.
+Thanks to [@xvw](https://github.com/xvw) for introducing me to OCaml. Since this blog uses an OCaml static site generator named YOCaml, I thought learning more about OCaml would be a good idea, and a good way to share my experience with other people who want to learn it too.
 
 In this first part, I will talk briefly about how to build a project in both languages. But first, let's talk about the two languages and their ecosystems — mostly paraphrasing their respective websites and Wikipedia pages.
 
