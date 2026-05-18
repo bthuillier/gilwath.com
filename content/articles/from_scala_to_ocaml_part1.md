@@ -128,4 +128,8 @@ let () = print_endline "Hello, World!"
 To run it, simply run `dune exec ./bin/main.exe` and you will see the output of the program.
 
 
-That wraps up the introduction. The next part will be about creating a simple CRUD HTTP API with some in-memory data.
+## Conclusion
+
+As a Scala developer, I found OCaml's tooling refreshingly straightforward and just as easy to use as Scala's. The split between OPAM and Dune is not really a problem in practice: Dune manages the `.opam` file for you, and OPAM's role for version management is similar to SDKMAN in the JVM world or nvm in the Node.js world. I came away pleasantly surprised by how modern the OCaml tooling feels, and I'm looking forward to learning more about the language and its ecosystem.
+
+That wraps up this first part. The next part will be about creating a simple CRUD HTTP API with some in-memory data.
