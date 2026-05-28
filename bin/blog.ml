@@ -219,9 +219,13 @@ let fetch_articles resolver =
 (* -------------------------------------------------------------------------- *)
 
 (* Estimated on the raw markdown, before rendering. *)
-let document_extras document_kind content =
+let document_extras document_kind source content =
   match document_kind with
-  | Article -> Data.[ "reading_time", int (Reading_time.estimate content) ]
+  | Article ->
+    Data.
+      [ "reading_time", int (Reading_time.estimate content)
+      ; "og_image", string (Resolver.Target.article_og_url source)
+      ]
   | Page -> []
 ;;
 
@@ -262,7 +266,7 @@ let create_document resolver ~site document_kind source =
     and+ metadata, content =
       Yocaml_yaml.Pipeline.read_file_with_metadata (module Archetype) source
     in
-    let extras = document_extras document_kind content in
+    let extras = document_extras document_kind source content in
     let fields = inject_site site (extras @ Archetype.normalize metadata) in
     render_through templates fields content
   in
@@ -366,27 +370,140 @@ let copy_images resolver =
     (Action.copy_file ~into:images_path)
 ;;
 
-(* The OG preview is hand-authored in [assets/og-default.svg]; we rasterize
-   it through [rsvg-convert] (must be on PATH). [Cmd.w] watches the SVG so
-   the cache invalidates whenever it changes; the [target] is filled in by
-   [Action.exec_cmd], like in the official [d2] example. *)
-let og_svg resolver = Path.(Resolver.Source.assets resolver / "og-default.svg")
+(* The site-wide OG preview is hand-authored in [assets/og-default.svg]; we
+   rasterize it through [rsvg-convert] (must be on PATH). [Cmd.w] watches
+   the input so the cache invalidates whenever it changes; the [target] is
+   filled in by [Action.exec_cmd], like in the official [d2] example.
 
-let invoke_rsvg resolver target =
+   [~watched:true] only matters for source SVGs (the default card). The
+   per-article SVGs are themselves build outputs, so they're already tracked
+   by the previous [write_static_file] action and we pass [watched:false]. *)
+let og_default_svg resolver =
+  Path.(Resolver.Source.assets resolver / "og-default.svg")
+;;
+
+let invoke_rsvg ~track_input svg_path target =
   let open Cmd in
   make
     "rsvg-convert"
     [ param ~prefix:"-" "w" (i 1200)
     ; param ~prefix:"-" "h" (i 630)
-    ; arg (w (og_svg resolver))
+    ; arg (path ~watched:track_input svg_path)
     ; param ~prefix:"-" "o" target
     ]
 ;;
 
 let render_og_image resolver =
   Action.exec_cmd
-    (invoke_rsvg resolver)
+    (invoke_rsvg ~track_input:true (og_default_svg resolver))
     Path.(Resolver.Target.images resolver / "og-default.png")
+;;
+
+(* Greedy word-wrap to [max_chars] per line, capped at [max_lines]. Overflow
+   on the final line is truncated with an ellipsis. *)
+let wrap_text ~max_chars ~max_lines text =
+  let words = String.split_on_char ' ' text |> List.filter (( <> ) "") in
+  let lines, current =
+    List.fold_left
+      (fun (acc, cur) word ->
+         let candidate = if cur = "" then word else cur ^ " " ^ word in
+         if String.length candidate <= max_chars
+         then acc, candidate
+         else cur :: acc, word)
+      ([], "")
+      words
+  in
+  let lines = List.rev (if current = "" then lines else current :: lines) in
+  match lines with
+  | [] -> []
+  | _ when List.length lines <= max_lines -> lines
+  | _ ->
+    let kept = List.filteri (fun i _ -> i < max_lines) lines in
+    let head, last =
+      let rev = List.rev kept in
+      List.rev (List.tl rev), List.hd rev
+    in
+    head @ [ last ^ "…" ]
+;;
+
+let data_lines lines = Data.list (List.map Data.string lines)
+
+let strip_scheme url =
+  match
+    List.find_opt
+      (fun p -> String.starts_with ~prefix:p url)
+      [ "https://"; "http://" ]
+  with
+  | Some p ->
+    String.sub url (String.length p) (String.length url - String.length p)
+  | None -> url
+;;
+
+(* Build the article-card SVG by rendering [og-article.svg] with the article's
+   title (word-wrapped) and synopsis (word-wrapped, optional). *)
+let render_article_og_svg ~site ~template_src article =
+  let open Archetype in
+  let title = Article.title article in
+  let synopsis = Article.synopsis article in
+  let title_lines = wrap_text ~max_chars:24 ~max_lines:3 title in
+  let synopsis_lines =
+    match synopsis with
+    | None -> []
+    | Some s -> wrap_text ~max_chars:55 ~max_lines:2 s
+  in
+  let metadata =
+    Data.
+      [ "title_lines", data_lines title_lines
+      ; "has_synopsis", bool (synopsis_lines <> [])
+      ; "synopsis_lines", data_lines synopsis_lines
+      ; "author", string (Site.author site)
+      ; "url", string (strip_scheme (Site.url site))
+      ]
+  in
+  let parameters =
+    metadata |> List.map (fun (k, v) -> k, Yocaml_jingoo.from v)
+  in
+  Yocaml_jingoo.render ~strict:false parameters template_src
+;;
+
+let create_article_og_svg resolver ~site source =
+  let target = Resolver.Target.article_og_svg resolver source in
+  let pipeline =
+    let open Task in
+    let+ () = track_deps resolver
+    and+ () = Pipeline.track_file (Resolver.Source.og_article_template resolver)
+    and+ template_src =
+      Pipeline.read_file (Resolver.Source.og_article_template resolver)
+    and+ article, _ =
+      Yocaml_yaml.Pipeline.read_file_with_metadata
+        (module Archetype.Article)
+        source
+    in
+    render_article_og_svg ~site ~template_src article
+  in
+  Action.Static.write_file target pipeline
+;;
+
+let create_article_og_png resolver source =
+  let svg = Resolver.Target.article_og_svg resolver source in
+  let png = Resolver.Target.article_og_png resolver source in
+  Action.exec_cmd (invoke_rsvg ~track_input:false svg) png
+;;
+
+(* Compose the SVG and PNG actions for one article. [Action.t] is just
+   [Cache.t -> Cache.t Eff.t], so sequencing is a plain monadic bind. *)
+let create_article_og resolver ~site source : Action.t =
+  fun cache ->
+  let open Eff in
+  let* cache = create_article_og_svg resolver ~site source cache in
+  create_article_og_png resolver source cache
+;;
+
+let create_article_ogs resolver ~site =
+  Batch.iter_files
+    ~where:is_markdown
+    (Resolver.Source.articles resolver)
+    (create_article_og resolver ~site)
 ;;
 
 let copy_asset_to_root name resolver =
@@ -476,6 +593,7 @@ let program resolver () =
   >>= copy_cname resolver
   >>= copy_favicon resolver
   >>= render_og_image resolver
+  >>= create_article_ogs resolver ~site
   >>= create_css resolver
   >>= create_pages resolver ~site
   >>= create_articles resolver ~site

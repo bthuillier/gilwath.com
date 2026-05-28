@@ -28,14 +28,14 @@
   <meta property="og:title" content="{% if page_title is string %}{{ page_title }}{% elseif title is string %}{{ title }}{% else %}{{ site.name }}{% endif %}">
   <meta property="og:description" content="{% if description %}{{ description }}{% else %}{{ site.description }}{% endif %}">
   <meta property="og:url" content="{{ site.url }}">
-  <meta property="og:image" content="{{ site.url }}{{ site.og_image }}">
+  <meta property="og:image" content="{{ site.url }}{% if og_image is string %}{{ og_image }}{% else %}{{ site.og_image }}{% endif %}">
   <meta property="og:locale" content="{{ site.lang }}">
 
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{% if page_title is string %}{{ page_title }}{% elseif title is string %}{{ title }}{% else %}{{ site.name }}{% endif %}">
   <meta name="twitter:description" content="{% if description %}{{ description }}{% else %}{{ site.description }}{% endif %}">
-  <meta name="twitter:image" content="{{ site.url }}{{ site.og_image }}">
+  <meta name="twitter:image" content="{{ site.url }}{% if og_image is string %}{{ og_image }}{% else %}{{ site.og_image }}{% endif %}">
 
   <!-- Federated identity verification (rel=me) -->
   <link rel="me" href="{{ site.github }}">

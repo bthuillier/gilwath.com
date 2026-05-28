@@ -18,6 +18,7 @@ module Source : sig
   val css : t -> Path.t
   val templates : t -> Path.t
   val resolve_templates : t -> string list -> Path.t list
+  val og_article_template : t -> Path.t
 
   (* Content *)
   val content : t -> Path.t
@@ -35,6 +36,10 @@ module Target : sig
   val target_root : t -> Path.t
   val cache : t -> Path.t
   val images : t -> Path.t
+  val og_dir : t -> Path.t
+  val article_og_svg : t -> Path.t -> Path.t
+  val article_og_png : t -> Path.t -> Path.t
+  val article_og_url : Path.t -> string
   val style_css : t -> Path.t
   val page : t -> Path.t -> Path.t
   val article : t -> Path.t -> Path.t

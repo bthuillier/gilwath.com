@@ -28,6 +28,8 @@ module Source = struct
     List.map (fun n -> Path.(templates resolver / n)) names
   ;;
 
+  let og_article_template res = Path.(templates res / "og-article.svg")
+
   (* Content *)
   let content res = Path.(source_root res / "content")
   let pages res = Path.(content res / "pages")
@@ -44,6 +46,23 @@ module Target = struct
   let target_root { target; server; _ } = Path.relocate ~into:target server
   let cache res = Path.(target_root res / ".cache")
   let images res = Path.(target_root res / "images")
+  let og_dir res = Path.(images res / "og")
+
+  let article_og_svg res source =
+    source |> Path.move ~into:(og_dir res) |> Path.change_extension "svg"
+  ;;
+
+  let article_og_png res source =
+    source |> Path.move ~into:(og_dir res) |> Path.change_extension "png"
+  ;;
+
+  (* Public URL fragment matching [article_og_png] under the site root. *)
+  let article_og_url source =
+    let stem = Path.basename source |> Option.value ~default:"og" in
+    let stem = Filename.remove_extension stem in
+    "/images/og/" ^ stem ^ ".png"
+  ;;
+
   let style_css res = Path.(target_root res / "style.css")
 
   let page res source =
