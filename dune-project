@@ -20,6 +20,8 @@
   (yocaml_unix (>= 2.5.0))
   cmarkit
   hilite
+  yojson
+  textmate-language
   (yocaml_yaml (>= 2.5.0))
   (yocaml_markdown (>= 2.5.0))
   (yocaml_jingoo (>= 2.5.0))
