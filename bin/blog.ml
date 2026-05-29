@@ -29,6 +29,7 @@ module Education = Blog_core.Education
 module Cv = Blog_core.Cv
 module Reading_time = Blog_core.Reading_time
 module Resolver = Blog_core.Resolver
+module Markdown = Blog_core.Markdown
 
 module Feed = struct
   let owner site =
@@ -151,7 +152,7 @@ let fetch_dated
            ~on:`Source
            file
        in
-       metadata, Yocaml_markdown.from_string_to_html content)
+       metadata, Markdown.to_html content)
     folder
   >>| List.sort (fun (a, _) (b, _) ->
     ~-(Archetype.Datetime.compare (start_date a) (start_date b)))
@@ -234,7 +235,7 @@ let document_extras document_kind source content =
 let render_through templates fields content =
   content
   |> render_md ~metadata:fields
-  |> Yocaml_markdown.from_string_to_html
+  |> Markdown.to_html
   |> templates
        (module Fields : Required.DATA_INJECTABLE
          with type t = (string * Data.t) list)

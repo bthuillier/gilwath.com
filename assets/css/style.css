@@ -239,6 +239,205 @@ pre code .ocaml-keyword-other-ocaml { color: var(--syn-punct); }
    when the grammar wraps source inside a coloured span. */
 pre code .ocaml-source { color: var(--ink); }
 
+/* ---------- Scala ---------------------------------------------
+   The Scala TextMate grammar (scala.tmLanguage.json, embedded in
+   the generator) emits .scala-* class names following the same
+   scope-to-class scheme as OCaml. We reuse the Solarized palette
+   above so both languages read consistently. */
+
+/* Keywords: declarations (def, val, class…), control flow, type,
+   import/package, and operators. */
+pre code .scala-keyword-declaration,
+pre code .scala-keyword-declaration-stable,
+pre code .scala-keyword-declaration-volatile,
+pre code .scala-keyword-control-flow,
+pre code .scala-keyword-control-flow-jump,
+pre code .scala-keyword-control-exception,
+pre code .scala-keyword-type,
+pre code .scala-keyword-other-import,
+pre code .scala-keyword-other-export,
+pre code .scala-keyword-other-package,
+pre code .scala-storage-modifier { color: var(--syn-keyword); }
+
+/* Operators and arrows (=>, <-, +, =, …). */
+pre code .scala-keyword-operator,
+pre code .scala-keyword-operator-arithmetic,
+pre code .scala-keyword-operator-comparison,
+pre code .scala-keyword-operator-logical,
+pre code .scala-keyword-other-arrow { color: var(--syn-keyword); }
+
+/* Strings (single, triple, interpolated) and escapes. */
+pre code .scala-string-quoted-single,
+pre code .scala-string-quoted-double,
+pre code .scala-string-quoted-triple,
+pre code .scala-string-quoted-double-interpolated,
+pre code .scala-string-quoted-triple-interpolated,
+pre code .scala-constant-character-escape { color: var(--syn-string); }
+
+/* Type names and class/type entity names. The bare .scala-entity-name
+   covers capitalised references like `Unit` in a return position. */
+pre code .scala-entity-name,
+pre code .scala-entity-name-type,
+pre code .scala-entity-name-class,
+pre code .scala-support-function-type-of { color: var(--syn-type); }
+
+/* Function and given names in definitions. */
+pre code .scala-entity-name-function,
+pre code .scala-entity-name-given { color: var(--syn-function); }
+
+/* Literals: numbers, language constants (true/false/null), symbols. */
+pre code .scala-constant-numeric,
+pre code .scala-constant-language,
+pre code .scala-constant-other-symbol,
+pre code .scala-variable-language { color: var(--syn-constant); }
+
+/* Comments. */
+pre code .scala-comment-line-double-slash,
+pre code .scala-comment-block,
+pre code .scala-comment-block-documentation { color: var(--syn-comment); }
+
+/* Punctuation — recessive, like OCaml's. */
+pre code .scala-punctuation-definition,
+pre code .scala-punctuation-section-block-begin,
+pre code .scala-punctuation-section-block-end,
+pre code .scala-punctuation-separator-namespace,
+pre code .scala-meta-bracket { color: var(--syn-punct); }
+
+/* Catch-all source span resets to default ink, mirroring OCaml. */
+pre code .scala-source { color: var(--ink); }
+
+/* ---------- Dune --------------------------------------------------
+   Dune's grammar (bundled with hilite, used for ```dune blocks)
+   emits .dune-* class names. Stanza names and fields read as
+   keywords; the rest reuses the shared palette. */
+
+/* Stanza/field keywords (name, libraries, public_name, executable…). */
+pre code .dune-keyword-other { color: var(--syn-keyword); }
+
+/* Strings. */
+pre code .dune-string-quoted-double,
+pre code .dune-constant-character-string-escape { color: var(--syn-string); }
+
+/* Constants: flags, rule modes, language constants, numbers. */
+pre code .dune-constant-language,
+pre code .dune-constant-language-flag,
+pre code .dune-constant-language-rule-mode,
+pre code .dune-constant-numeric,
+pre code .dune-variable-other { color: var(--syn-constant); }
+
+/* Action names in rules (run, copy, …) read as functions. */
+pre code .dune-entity-name-function-action { color: var(--syn-function); }
+
+/* Comments. */
+pre code .dune-comment-line,
+pre code .dune-comment-block,
+pre code .dune-comment-sexp { color: var(--syn-comment); }
+
+/* Parentheses, string delimiters and structural list spans —
+   recessive. dune-meta-stanza-library-field wraps the parens and
+   whitespace around a field, so it belongs here, not with keywords. */
+pre code .dune-entity-tag-list-parenthesis,
+pre code .dune-meta-stanza-library-field,
+pre code .dune-punctuation-definition-string-begin,
+pre code .dune-punctuation-definition-string-end,
+pre code .dune-punctuation-definition-comment-begin,
+pre code .dune-punctuation-definition-comment-end { color: var(--syn-punct); }
+
+/* Catch-all source/list/atom spans reset to default ink. */
+pre code .dune-source,
+pre code .dune-meta-list,
+pre code .dune-meta-atom { color: var(--ink); }
+
+/* ---------- Shell -------------------------------------------------
+   The shell grammar (bundled with hilite) backs ```bash, ```sh and
+   ```shell blocks. The class prefix follows the fence name, so we
+   cover all three. Shell is sparsely tokenised — bare command words
+   stay default ink (.*-source); we colour keywords, strings,
+   variables, comments and builtins. */
+
+/* Control keywords (if, for, while, case…), operators and pipes. */
+pre code .bash-keyword-control,
+pre code .sh-keyword-control,
+pre code .shell-keyword-control,
+pre code .bash-keyword-operator-logical,
+pre code .sh-keyword-operator-logical,
+pre code .shell-keyword-operator-logical,
+pre code .bash-keyword-operator-pipe,
+pre code .sh-keyword-operator-pipe,
+pre code .shell-keyword-operator-pipe,
+pre code .bash-keyword-operator-list,
+pre code .sh-keyword-operator-list,
+pre code .shell-keyword-operator-list,
+pre code .bash-keyword-operator-redirect,
+pre code .sh-keyword-operator-redirect,
+pre code .shell-keyword-operator-redirect,
+pre code .bash-keyword-other,
+pre code .sh-keyword-other,
+pre code .shell-keyword-other { color: var(--syn-keyword); }
+
+/* Strings (single, double, interpolated) and escapes. */
+pre code .bash-string-quoted-single,
+pre code .sh-string-quoted-single,
+pre code .shell-string-quoted-single,
+pre code .bash-string-quoted-double,
+pre code .sh-string-quoted-double,
+pre code .shell-string-quoted-double,
+pre code .bash-string-interpolated-dollar,
+pre code .sh-string-interpolated-dollar,
+pre code .shell-string-interpolated-dollar,
+pre code .bash-constant-character-escape,
+pre code .sh-constant-character-escape,
+pre code .shell-constant-character-escape { color: var(--syn-string); }
+
+/* Type/builtin names and function definitions. */
+pre code .bash-support-function-builtin,
+pre code .sh-support-function-builtin,
+pre code .shell-support-function-builtin,
+pre code .bash-entity-name-function,
+pre code .sh-entity-name-function,
+pre code .shell-entity-name-function { color: var(--syn-function); }
+
+/* Variables ($FOO, $1, $@…) and numeric constants. */
+pre code .bash-variable-other-normal,
+pre code .sh-variable-other-normal,
+pre code .shell-variable-other-normal,
+pre code .bash-variable-other-special,
+pre code .sh-variable-other-special,
+pre code .shell-variable-other-special,
+pre code .bash-variable-other-positional,
+pre code .sh-variable-other-positional,
+pre code .shell-variable-other-positional,
+pre code .bash-constant-numeric-integer,
+pre code .sh-constant-numeric-integer,
+pre code .shell-constant-numeric-integer { color: var(--syn-constant); }
+
+/* Comments. */
+pre code .bash-comment-line-number-sign,
+pre code .sh-comment-line-number-sign,
+pre code .shell-comment-line-number-sign,
+pre code .bash-comment-line-shebang,
+pre code .sh-comment-line-shebang,
+pre code .shell-comment-line-shebang { color: var(--syn-comment); }
+
+/* Comment hashes, string delimiters and variable sigils — recessive. */
+pre code .bash-punctuation-definition-comment,
+pre code .sh-punctuation-definition-comment,
+pre code .shell-punctuation-definition-comment,
+pre code .bash-punctuation-definition-string-begin,
+pre code .sh-punctuation-definition-string-begin,
+pre code .shell-punctuation-definition-string-begin,
+pre code .bash-punctuation-definition-string-end,
+pre code .sh-punctuation-definition-string-end,
+pre code .shell-punctuation-definition-string-end,
+pre code .bash-punctuation-definition-variable,
+pre code .sh-punctuation-definition-variable,
+pre code .shell-punctuation-definition-variable { color: var(--syn-punct); }
+
+/* Catch-all source span resets to default ink. */
+pre code .bash-source,
+pre code .sh-source,
+pre code .shell-source { color: var(--ink); }
+
 /* Note de bas de page (style Tufte/Gwern) */
 .footnote-ref {
   font-size: .75em;
