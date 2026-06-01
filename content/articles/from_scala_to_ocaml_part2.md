@@ -71,7 +71,7 @@ For this example I will go with http4s: it is one of the simplest options, and i
 
 On the OCaml side, the ecosystem is a bit smaller, but there are still good options for doing HTTP APIs:
 - [Opium](https://github.com/rgrinberg/opium): a lightweight web framework inspired by Ruby's Sinatra. It provides a simple DSL for defining routes and handling requests, making it easy to get started with HTTP APIs in OCaml.
-- [Dream](https://github.com/aantron/dream): a modern web framework that emphasizes simplicity and performance. It has a clean API and supports features like WebSockets and server-sent events, making it a good choice for building real-time applications.
+- [Dream](https://github.com/aantron/dream): a modern web framework that emphasizes simplicity and performance. It has a clean API and supports features like WebSockets, making it a good choice for building real-time applications.
 - [Vif](https://github.com/robur-coop/vif): a simple HTTP server for OCaml 5, with a focus on being easy to use and understand. It has a minimal API and is designed for small to medium-sized applications.
 
 To pick an HTTP library on the OCaml side I asked [@xvw](https://github.com/xvw) for advice, and he recommended trying Vif together with [jsont](https://erratique.ch/software/jsont) for JSON. Vif is small and unopinionated, which means the routing and JSON code stay visible in our own files rather than hidden behind framework magic — exactly what we want for a side-by-side comparison. So I will go with Vif and jsont for the OCaml side.
@@ -495,7 +495,7 @@ Same five endpoints, same JSON shapes, same status codes on both sides. The Scal
 
 Building the same five-endpoint API on both sides was a good way to feel out the OCaml ecosystem next to one I already know.
 
-What I liked on the OCaml side, first, was the language itself. Type inference is excellent: in Scala you often have to annotate types outside of method bodies, while `bin/main.ml` has essentially no annotations and still reads clearly. I also enjoyed how `.mli` files made `Service.t` abstract for free, and how staying synchronous spared us any monad-transformer wrangling. Vif is more verbose and less mature than http4s, but easy to extend (the small `uuid_atom` combinator is a good example), and jsont is very explicit but pleasant to work with.
+What I liked on the OCaml side, first, was the language itself. Type inference is excellent: in Scala you often have to annotate types outside of method bodies, while `bin/main.ml` has essentially no annotations and still reads clearly. I also liked that functions are naturally curried: partially applying one is just leaving off the last arguments, which is exactly what `handle_service_result req ~ok:`OK` does. Currying is doable in Scala too, but the ergonomics around it are a little bit meh — you reach for multiple parameter lists, explicit `_` placeholders or eta-expansion, and it never feels as effortless. I also enjoyed how `.mli` files made `Service.t` abstract for free, and how staying synchronous spared us any monad-transformer wrangling. Vif is more verbose and less mature than http4s, but easy to extend (the small `uuid_atom` combinator is a good example), and jsont is very explicit but pleasant to work with.
 
 What I missed from Scala was mostly comfort: circe's `derives` saves a lot of boilerplate, http4s' pattern-matching DSL is hard to beat for readability, and the ecosystem around HTTP APIs is broader and more mature.
 
