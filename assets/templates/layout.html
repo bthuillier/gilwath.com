@@ -17,6 +17,7 @@
 
   <meta name="description" content="{% if description %}{{ description }}{% else %}{{ site.description }}{% endif %}">
   <meta name="author" content="{{ site.author }}">
+  {% if has_tags %}<meta name="keywords" content="{{ tags | join(', ') }}">{% endif %}
 
   <link rel="canonical" href="{{ site.url }}{% if page_url is string %}{{ page_url }}{% endif %}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -30,6 +31,11 @@
   <meta property="og:url" content="{{ site.url }}{% if page_url is string %}{{ page_url }}{% endif %}">
   <meta property="og:image" content="{{ site.url }}{% if og_image is string %}{{ og_image }}{% else %}{{ site.og_image }}{% endif %}">
   <meta property="og:locale" content="{{ site.lang }}">
+  {% if page_url is string %}
+  <meta property="article:published_time" content="{{ date.repr.date }}">
+  <meta property="article:author" content="{{ site.author }}">
+  {% for tag in tags %}<meta property="article:tag" content="{{ tag }}">{% endfor %}
+  {% endif %}
 
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image">
@@ -45,7 +51,38 @@
 
   <link rel="stylesheet" href="/style.css">
 
-  <!-- Structured data: a single Person graph for search engines. -->
+  <!-- Structured data: the site-wide Person identity, plus a BlogPosting
+       graph on article pages that references that Person as its author. -->
+  {% if page_url is string %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "{% if page_title is string %}{{ page_title }}{% else %}{{ title }}{% endif %}",
+    "description": "{% if description %}{{ description }}{% else %}{{ site.description }}{% endif %}",
+    "datePublished": "{{ date.repr.date }}",
+    "dateModified": "{{ date.repr.date }}",
+    "url": "{{ site.url }}{{ page_url }}",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "{{ site.url }}{{ page_url }}"
+    },
+    "image": "{{ site.url }}{% if og_image is string %}{{ og_image }}{% else %}{{ site.og_image }}{% endif %}",
+    "inLanguage": "{{ site.lang }}"{% if has_tags %},
+    "keywords": [{% for tag in tags %}"{{ tag }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %},
+    "author": {
+      "@type": "Person",
+      "name": "{{ site.author }}",
+      "url": "{{ site.url }}"
+    },
+    "publisher": {
+      "@type": "Person",
+      "name": "{{ site.author }}",
+      "url": "{{ site.url }}"
+    }
+  }
+  </script>
+  {% endif %}
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",

@@ -2,6 +2,12 @@
 title: "Discovering OCaml as a Scala Developer Part 2: Building a CRUD HTTP API"
 synopsis: Building the same small Tasks CRUD API in both Scala and OCaml, and comparing the experience side by side.
 date: 2026-05-28
+tags:
+  - OCaml
+  - Scala
+  - Functional Programming
+  - HTTP API
+  - CRUD
 ---
 
 ## Introduction

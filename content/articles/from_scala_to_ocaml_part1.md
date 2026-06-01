@@ -2,6 +2,11 @@
 title: "Discovering OCaml as a Scala Developer Part 1: The Journey Begins"
 synopsis: As a Scala developer, I will document my journey of learning OCaml and how it compares to Scala
 date: 2026-05-19
+tags:
+  - OCaml
+  - Scala
+  - Functional Programming
+  - Tooling
 ---
 
 ## Introduction

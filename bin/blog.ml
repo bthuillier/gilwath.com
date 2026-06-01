@@ -546,13 +546,46 @@ let create_sitemap resolver ~site =
   let url loc =
     Printf.sprintf "  <url><loc>%s%s</loc></url>" (Site.url site) loc
   in
+  let url_with_lastmod loc lastmod =
+    Printf.sprintf
+      "  <url><loc>%s%s</loc><lastmod>%s</lastmod></url>"
+      (Site.url site)
+      loc
+      lastmod
+  in
+  let month_to_int : Archetype.Datetime.month -> int = function
+    | Jan -> 1
+    | Feb -> 2
+    | Mar -> 3
+    | Apr -> 4
+    | May -> 5
+    | Jun -> 6
+    | Jul -> 7
+    | Aug -> 8
+    | Sep -> 9
+    | Oct -> 10
+    | Nov -> 11
+    | Dec -> 12
+  in
+  let iso_date (date : Archetype.Datetime.t) =
+    Printf.sprintf
+      "%04d-%02d-%02d"
+      (date.year :> int)
+      (month_to_int date.month)
+      (date.day :> int)
+  in
   let static_urls = List.map url [ "/"; "/blog.html"; "/cv.html" ] in
   let pipeline =
     let open Task in
     let+ () = track_deps resolver
     and+ articles = fetch_articles resolver in
     let article_urls =
-      List.map (fun (path, _article) -> url (Path.to_string path)) articles
+      List.map
+        (fun (path, article) ->
+           url_with_lastmod
+             (Path.to_string path)
+             (iso_date (Archetype.Article.date article)))
+        articles
     in
     String.concat
       "\n"

@@ -2,6 +2,11 @@
 title: Building a CV page with YOCaml
 synopsis: A retrospective of how I turned a folder of markdown files into a CV page
 date: 2026-05-06
+tags:
+  - OCaml
+  - YOCaml
+  - Static Site Generator
+  - Functional Programming
 ---
 
 ## Yocaml

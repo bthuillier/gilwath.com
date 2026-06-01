@@ -556,6 +556,26 @@ pre code .shell-source { color: var(--ink); }
   border-left: 2px solid var(--rule);
 }
 
+/* Tags : petites étiquettes de sujet sous le chapeau de l'article. */
+.tags {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--s-5);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+}
+
+.tags .tag {
+  font-family: var(--font-sans);
+  font-size: .8rem;
+  color: var(--ink-muted);
+  background: var(--bg-soft);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: .15em .7em;
+}
+
 /* La lettrine ne doit pas s'appliquer au tagline si jamais il est
    le premier <p> du conteneur — on la cible explicitement plus bas. */
 

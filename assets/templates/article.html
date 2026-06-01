@@ -7,7 +7,12 @@
       </p>
     {% if has_synopsis %}
       <p class="tagline">{{ synopsis }}</p>
-    {% endif %}  
+    {% endif %}
+    {% if has_tags %}
+      <ul class="tags">
+        {% for tag in tags %}<li class="tag">{{ tag }}</li>{% endfor %}
+      </ul>
+    {% endif %}
 
     {{safe (yocaml_body) }}
 
