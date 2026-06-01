@@ -40,6 +40,7 @@ module Target : sig
   val article_og_svg : t -> Path.t -> Path.t
   val article_og_png : t -> Path.t -> Path.t
   val article_og_url : Path.t -> string
+  val article_url : Path.t -> string
   val style_css : t -> Path.t
   val page : t -> Path.t -> Path.t
   val article : t -> Path.t -> Path.t

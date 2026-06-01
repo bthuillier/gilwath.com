@@ -226,6 +226,7 @@ let document_extras document_kind source content =
     Data.
       [ "reading_time", int (Reading_time.estimate content)
       ; "og_image", string (Resolver.Target.article_og_url source)
+      ; "page_url", string (Resolver.Target.article_url source)
       ]
   | Page -> []
 ;;

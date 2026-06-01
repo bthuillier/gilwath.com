@@ -63,6 +63,13 @@ module Target = struct
     "/images/og/" ^ stem ^ ".png"
   ;;
 
+  (* Public URL fragment matching [article] under the site root. *)
+  let article_url source =
+    let stem = Path.basename source |> Option.value ~default:"index" in
+    let stem = Filename.remove_extension stem in
+    "/articles/" ^ stem ^ ".html"
+  ;;
+
   let style_css res = Path.(target_root res / "style.css")
 
   let page res source =

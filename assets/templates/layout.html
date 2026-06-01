@@ -18,16 +18,16 @@
   <meta name="description" content="{% if description %}{{ description }}{% else %}{{ site.description }}{% endif %}">
   <meta name="author" content="{{ site.author }}">
 
-  <link rel="canonical" href="{{ site.url }}">
+  <link rel="canonical" href="{{ site.url }}{% if page_url is string %}{{ page_url }}{% endif %}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="alternate" type="application/atom+xml" title="{{ site.name }}" href="/atom.xml">
 
   <!-- Open Graph -->
   <meta property="og:site_name" content="{{ site.name }}">
-  <meta property="og:type" content="website">
+  <meta property="og:type" content="{% if page_url is string %}article{% else %}website{% endif %}">
   <meta property="og:title" content="{% if page_title is string %}{{ page_title }}{% elseif title is string %}{{ title }}{% else %}{{ site.name }}{% endif %}">
   <meta property="og:description" content="{% if description %}{{ description }}{% else %}{{ site.description }}{% endif %}">
-  <meta property="og:url" content="{{ site.url }}">
+  <meta property="og:url" content="{{ site.url }}{% if page_url is string %}{{ page_url }}{% endif %}">
   <meta property="og:image" content="{{ site.url }}{% if og_image is string %}{{ og_image }}{% else %}{{ site.og_image }}{% endif %}">
   <meta property="og:locale" content="{{ site.lang }}">
 
