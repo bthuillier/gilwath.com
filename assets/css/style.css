@@ -12,6 +12,9 @@
   --ink:          #1a1715;
   --ink-muted:    #6b6864;
   --rule:         #d8d2c4;
+  --link:         #1a5a8a;  /* deep solarized blue, readable on cream */
+  --link-rule:    #268bd2;  /* solarized blue, used for the underline */
+  --link-hover:   #b58900;  /* solarized yellow, warms up on hover */
 
   /* Typo : stack système haut de gamme, fallback systématique.
      Si tu veux une rendu identique partout, ajoute en <head> :
@@ -138,9 +141,31 @@ a {
   text-underline-offset: 0.2em;
   text-decoration-thickness: 1px;
   text-decoration-color: var(--rule);
-  transition: text-decoration-color .15s;
+  transition: color .15s, text-decoration-color .15s;
 }
 a:hover { text-decoration-color: var(--ink); }
+
+/* Article-body links get a touch of colour — chrome (header, nav,
+   footer, post list, CV) keeps the neutral rule above. */
+.article a {
+  color: var(--link);
+  text-decoration-color: var(--link-rule);
+}
+.article a:hover {
+  color: var(--link-hover);
+  text-decoration-color: var(--link-hover);
+}
+
+/* The article-meta block (date at the top, "← Back" at the bottom)
+   sits inside .article but is chrome, not prose — keep it neutral. */
+.article-meta a {
+  color: var(--ink-muted);
+  text-decoration-color: var(--rule);
+}
+.article-meta a:hover {
+  color: var(--ink);
+  text-decoration-color: var(--ink);
+}
 
 em, i { font-style: italic; }
 strong, b { font-weight: 600; }
