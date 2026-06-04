@@ -1,7 +1,7 @@
 ---
 title: "Automatic Typeclass Derivation in Scala 3"
 synopsis: Building a Debuggable typeclass from scratch and teaching the Scala 3 compiler to derive it for any case class or enum, using Mirror and inline metaprogramming.
-date: 2026-06-03
+date: 2026-06-04
 tags:
   - Scala
   - Functional Programming
