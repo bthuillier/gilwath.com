@@ -146,7 +146,7 @@ inline def derived[T](using m: Mirror.Of[T]): Debuggable[T] =
   val labels    = labelsOf[m.MirroredElemLabels]
   val typeName  = constValue[m.MirroredLabel]
   inline m match
-    case p: Mirror.ProductOf[T] => productDebuggable(typeName, labels, instances, p)
+    case _: Mirror.ProductOf[T] => productDebuggable(typeName, labels, instances)
     case s: Mirror.SumOf[T]     => sumDebuggable(instances, s)
 ```
 
@@ -159,7 +159,7 @@ A product is the easy case. The `instances` and `labels` lists we built line up 
 ```scala
 private def productDebuggable[T](
     typeName: String, labels: List[String],
-    instances: List[Debuggable[?]], p: Mirror.ProductOf[T]
+    instances: List[Debuggable[?]]
 ): Debuggable[T] = new Debuggable[T] {
   extension (x: T) def debug: String =
     val fields = x.asInstanceOf[Product].productIterator.toList
@@ -250,4 +250,14 @@ Let's recap what we built. Starting from nothing but a `Debuggable[T]` trait, we
 This is not just a toy. It is exactly the technique that libraries like [Circe](https://circe.github.io/circe/) use to derive JSON encoders and decoders for your types. The only real difference is that our `debug` produces a `String`, whereas a JSON codec produces a JSON AST: same `Mirror`, same recursion, different output type. You can see this for yourself in Circe's [Scala 3 derivation source](https://github.com/circe/circe/blob/series/0.14.x/modules/core/shared/src/main/scala-3/io/circe/derivation/package.scala), where `summonLabels`, `summonEncoder`/`summonDecoder` and the `Mirror.SumOf`/`Mirror.ProductOf` dispatch map almost one-to-one onto the `labelsOf`, `summonAll` and `inline match` we wrote here. We also saw, as a bonus, how to write a custom string interpolator by adding an extension method to `StringContext`.
 
 If you take one thing away from this article, let it be that automatic derivation in Scala 3 is not compiler magic. It is ordinary code that happens to run at compile time, and now you can write it yourself.
+
+## Running the full example
+
+The complete code is available as a [gist](https://gist.github.com/bthuillier/4f65135b17bd41f41adcb862ef6fd223). You can run it directly with [scala-cli](https://scala-cli.virtuslab.org/):
+
+```bash
+scala-cli https://gist.github.com/bthuillier/4f65135b17bd41f41adcb862ef6fd223
+```
+
+Thanks to [@ppurang](https://mastodon.social/@ppurang/116698440187229043) for two improvements that made it into that version: the many `given` witnesses now live inside the `Debuggable` companion object, and the unused `Mirror.ProductOf[T]` parameter in `productDebuggable` was dropped.
 
