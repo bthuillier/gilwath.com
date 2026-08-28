@@ -34,7 +34,7 @@ CREATE INDEX tasks_state_idx   ON tasks (state);
 CREATE INDEX tasks_project_idx ON tasks (project);
 ```
 
-It's basically a one-to-one mapping of the `Task` struct we defined in part 2, with one addition: a `project` field that did not exist before. The `id` field becomes our primary key, while `name` and `description` stay as `TEXT NOT NULL` because we defined them as non-optional `string`. For the `state`, we also use a `TEXT NOT NULL`, but with a `CHECK (state IN ('Waiting', 'InProgress', 'Done'))` constraint instead of an `ENUM`. PostgreSQL enums are harder to change over time: you can add a value, but you can't remove, rename or reorder existing ones without recreating the type, whereas a `CHECK` constraint is just a one-line edit.
+It's basically a one-to-one mapping of the `Task` struct we defined in part 2, with one addition: a `project` field that did not exist before. The `id` field becomes our primary key, while `name` and `description` stay as `TEXT NOT NULL` because we defined them as non-optional `string`. For the `state`, we also use a `TEXT NOT NULL`, but with a `CHECK (state IN ('Waiting', 'InProgress', 'Done'))` constraint instead of an `ENUM`. PostgreSQL enums are harder to change over time: you can add a value, and since PostgreSQL 10 rename one, but you can't remove or reorder existing values without recreating the type, whereas a `CHECK` constraint is just a one-line edit.
 
 The new `project` field is a project code of exactly 3 uppercase letters (for example `ABC`), enforced by a regex `CHECK` constraint. It will allow us to filter the list of tasks with optional `?status=` and `?project=` query parameters, which will give us a good reason to build dynamic queries later in the article. And since filtering on these two columns will be our most common query, we also add an index on each of them.
 
@@ -42,7 +42,7 @@ The new `project` field is a project code of exactly 3 uppercase letters (for ex
 
 On the Scala side, the ecosystem for SQL libraries is wide, and it could be even wider if we take a look at the whole JVM ecosystem, but in our case we will focus on libraries that target the Scala language:
 - [Skunk](https://typelevel.org/skunk/): a purely functional library powered by cats-effect and fs2, and because it doesn't rely on JDBC it targets only PostgreSQL with its own driver implementation
-- [Kyo-SQL](https://github.com/getkyo/kyo/blob/main/kyo-sql/README.md): same as Skunk but instead of cats-effect it is based on the Kyo ecosystem
+- [Kyo-SQL](https://github.com/getkyo/kyo/blob/main/kyo-sql/README.md): like Skunk it doesn't rely on JDBC, but it is based on the Kyo ecosystem and supports more than PostgreSQL
 - [ZIO-Quill](https://zio.dev/zio-quill/): a compile-time query generation library where queries look like Scala collection code, queries are checked and generated at compile time, it is based on the ZIO ecosystem
 - [Slick](https://scala-slick.org/): one of the historical libraries to access SQL databases, you create queries with a collection-like API against table definitions, there is also support to write raw SQL queries instead
 - [Doobie](https://typelevel.org/doobie/): a purely functional library powered by cats-effect, it is not an ORM of any sort, it provides a functional way to interact with JDBC and allows users to write SQL queries in an efficient way
@@ -158,7 +158,7 @@ given Meta[State] =
 given Read[Task] = Read.derived
 ```
 
-In Caqti, there is a bit more work to do. The mapping is built with the `Row_type` module (aliased as `Rt` below): we call `Rt.custom`, which plays the same role as `tiemap`, we start from `Rt.string`, since that is how it's stored in the database, and we provide the two functions `~encode` and `~decode`, both returning a `result` to allow us to handle bad values. Note that we also have to define a mapping for the `id` column, because Caqti has no built-in type for UUIDs, whereas Doobie gets one from the JDBC driver.
+In Caqti, there is a bit more work to do. The mapping is built with the `Row_type` module (aliased as `Rt` below): we call `Rt.custom`, which plays the same role as `tiemap`, we start from `Rt.string`, since that is how it's stored in the database, and we provide the two functions `~encode` and `~decode`, both returning a `result` to allow us to handle bad values. Note that we also have to define a mapping for the `id` column, because Caqti has no built-in type for UUIDs, whereas Doobie gets one from its `doobie-postgres` module.
 
 The real difference with Scala shows up for the full row: what took a single `Read.derived` line in Scala has to be spelled out with `product` and one `proj` (projection) per field. Each `proj` pairs a column type with the accessor that reads the field, and the `intro` function rebuilds the record from the decoded columns. One last detail: these combinators come from the request template API of Caqti (`Caqti.Template` and `Caqti.Templater`), the main API since Caqti 3.0, the version we use here.
 
@@ -326,12 +326,20 @@ class PostgresTaskService(xa: Transactor[IO]) extends TaskService {
 }
 ```
 
-In OCaml, every operation borrows a connection from the pool with a small `with_conn` helper built on `Pool.use`, which plays the role of `transact(transactor)`. A connection is a first-class module, and each request is executed with the method matching its multiplicity: `Db.exec` for statements with no result, `Db.find_opt` for zero or one row and `Db.collect_list` for many rows, so there is no equivalent of choosing between `.run` and `.to[List]` at the call site, the type of the request already decided it. Every call returns a `result`: for the domain errors we want to expose, like the unique violation, we pattern match on the error and inspect `Caqti.Error.cause`, which already classifies it as `` `Unique_violation ``: it is the same SQLSTATE `23505` underneath, but the driver does the mapping for us, so the magic number stays out of our code and the same match would keep working on another database backend. The remaining unexpected errors are raised as exceptions with `Caqti.Error.Exn` and turned into a 500 by Vif.
+In OCaml, every operation borrows a connection from the pool with a small `with_conn` helper built on `Pool.use`, which plays the role of `transact(transactor)` (minus the transaction: `transact` also wraps the program in one, while `Pool.use` only borrows the connection). A connection is a first-class module, and each request is executed with the method matching its multiplicity: `Db.exec` for statements with no result, `Db.find_opt` for zero or one row and `Db.collect_list` for many rows, so there is no equivalent of choosing between `.run` and `.to[List]` at the call site, the type of the request already decided it. Every call returns a `result`: for the domain errors we want to expose, like the unique violation, we pattern match on the error and inspect `Caqti.Error.cause`, which already classifies it as `` `Unique_violation ``: it is the same SQLSTATE `23505` underneath, but the driver does the mapping for us, so the magic number stays out of our code and the same match would keep working on another database backend. The remaining unexpected errors are raised as exceptions with `Caqti.Error.Exn`. Be careful here: with the current beta of Vif an unhandled exception means the request gets no response at all, so the handlers wrap every store call with a small helper that catches these exceptions, logs them and returns a proper 500:
+
+```ocaml
+let with_db_errors req k =
+  try k () with
+  | Caqti.Error.Exn err ->
+    Printf.eprintf "database error: %s\n%!" (Caqti.Error.show err);
+    respond_error req `Internal_server_error "internal server error"
+```
 
 One last difference: pgx does not report the number of affected rows, so `update` and `delete` cannot pattern match on a row count like the Scala side does. Instead they check that the task exists with a preliminary SELECT on the same borrowed connection.
 
 ```ocaml
-(* Raise a Caqti query error as an exception (turned into a 500 by Vif). *)
+(* Raise a Caqti query error as an exception. *)
 let fail err = raise (Caqti.Error.Exn (err :> Caqti.Error.t))
 
 (* Borrow a connection from the pool for [f]. *)
