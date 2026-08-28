@@ -1,7 +1,7 @@
 ---
 title: "Discovering OCaml as a Scala Developer Part 3: Serving data with SQL Database (Postgresql)"
 synopsis: Using a SQL Database to serve the data for our CRUD API
-date: 2026-08-27
+date: 2026-08-31
 tags:
   - OCaml
   - Scala
