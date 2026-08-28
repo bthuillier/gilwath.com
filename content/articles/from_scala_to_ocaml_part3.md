@@ -34,12 +34,9 @@ CREATE INDEX tasks_state_idx   ON tasks (state);
 CREATE INDEX tasks_project_idx ON tasks (project);
 ```
 
-<!-- TODO(prose): the sample code adds a `project` field (3 uppercase letters, e.g. 'ABC')
-     that did not exist in part 2. It powers the ?state=/?project= list filters and gives
-     us a reason to show dynamic queries later. Introduce it here. -->
+It's basically a one-to-one mapping of the `Task` struct we defined in part 2, with one addition: a `project` field that did not exist before. The `id` field becomes our primary key, while `name` and `description` stay as `TEXT NOT NULL` because we defined them as non-optional `string`. For the `state`, we also use a `TEXT NOT NULL`, but with a `CHECK (state IN ('Waiting', 'InProgress', 'Done'))` constraint instead of an `ENUM`. PostgreSQL enums are harder to change over time: you can add a value, but you can't remove, rename or reorder existing ones without recreating the type, whereas a `CHECK` constraint is just a one-line edit.
 
-
-It's basically a one-to-one mapping of the `Task` struct we defined in part 2. The `id` field becomes our primary key, while `name` and `description` stay as `TEXT NOT NULL` because we defined them as non-optional `string`. For the `state`, we also use a `TEXT NOT NULL`, but with a `CHECK (state IN ('Waiting', 'InProgress', 'Done'))` constraint instead of an `ENUM`. PostgreSQL enums are harder to change over time: you can add a value, but you can't remove, rename or reorder existing ones without recreating the type, whereas a `CHECK` constraint is just a one-line edit.
+The new `project` field is a project code of exactly 3 uppercase letters (for example `ABC`), enforced by a regex `CHECK` constraint. It will allow us to filter the list of tasks with optional `?status=` and `?project=` query parameters, which will give us a good reason to build dynamic queries later in the article. And since filtering on these two columns will be our most common query, we also add an index on each of them.
 
 ## Choosing the libraries
 
@@ -120,13 +117,13 @@ let uri_of_env () =
 
 module Pool = Caqti_miou_unix.Pool
 
-type t = (Caqti_miou.connection, Caqti_error.t) Pool.t
+type t = (Caqti_miou.connection, Caqti.Error.t) Pool.t
 
 (* Create the pool. The switch keeps it alive for the app's lifetime. *)
 let connect_pool ~sw () : t =
   match Caqti_miou_unix.connect_pool ~sw (uri_of_env ()) with
   | Ok pool -> pool
-  | Error err -> failwith (Caqti_error.show err)
+  | Error err -> failwith (Caqti.Error.show err)
 ```
 
 Because `Switch.run` wraps `Vif.run` in the main function of the app, the pool will be created once and stay alive for the application's lifetime, and when the server stops the connections will be closed/released.
@@ -163,13 +160,10 @@ given Read[Task] = Read.derived
 
 In Caqti, there is a bit more work to do. The mapping is built with the `Row_type` module (aliased as `Rt` below): we call `Rt.custom`, which plays the same role as `tiemap`, we start from `Rt.string`, since that is how it's stored in the database, and we provide the two functions `~encode` and `~decode`, both returning a `result` to allow us to handle bad values. Note that we also have to define a mapping for the `id` column, because Caqti has no built-in type for UUIDs, whereas Doobie gets one from the JDBC driver.
 
-The real difference with Scala shows up for the full row: what took a single `Read.derived` line in Scala has to be spelled out with `product` and one `proj` (projection) per field. Each `proj` pairs a column type with the accessor that reads the field, and the `intro` function rebuilds the record from the decoded columns. One last detail: these combinators come from `Caqti_template`, the new query API of Caqti, which is still marked as unstable, hence the `[@@@alert]` line to silence the warning.
+The real difference with Scala shows up for the full row: what took a single `Read.derived` line in Scala has to be spelled out with `product` and one `proj` (projection) per field. Each `proj` pairs a column type with the accessor that reads the field, and the `intro` function rebuilds the record from the decoded columns. One last detail: these combinators come from the request template API of Caqti (`Caqti.Template` and `Caqti.Templater`), the main API since Caqti 3.0, the version we use here.
 
 ```ocaml
-(* Caqti_template is a preview API; silence its instability alert. *)
-[@@@alert "-caqti_unstable"]
-
-module Rt = Caqti_template.Row_type
+module Rt = Caqti.Template.Row_type
 
 let uuid : Uuidm.t Rt.t =
   Rt.custom
@@ -203,10 +197,7 @@ let task : Tasks.task Rt.t =
 
 ## Writing the queries
 
-<!-- TODO(prose): Doobie's sql/fr interpolators vs Caqti's typed request combinators
-     (`-->.` exec, `-->?` zero-or-one, `-->*` many). The list endpoint is the interesting
-     contrast: Doobie composes fragments dynamically with whereAndOpt, while with Caqti we
-     keep four static prepared statements and pick one at runtime. -->
+In Doobie, writing queries is straightforward, you just have to use the two string interpolators available, `sql` and `fr`. The main difference between the two is that `fr` appends a single trailing space to the fragment to allow composition, so generally we use `sql` when we write a full query and `fr` when we want to compose fragments. In our case we will use `sql` for most of our queries, referencing the values of the fields we want to filter or insert with `${myField}`, which will be directly translated on the JDBC side into a prepared statement with the right parameters. Only the `selectWhere` query has dynamic filtering: for that we will use the interpolator `fr` and the combinator `Fragments.whereAndOpt(conditions)`. This combinator accepts a list of fragments, concatenates them with `AND` and prefixes the whole created fragment with a `WHERE`, but if the list of fragments is empty it returns an empty fragment.
 
 ```scala
 case class TaskFilter(state: Option[State] = None, project: Option[String] = None)
@@ -244,9 +235,13 @@ private def selectWhere(filter: TaskFilter): Query0[Task] = {
 }
 ```
 
+In Caqti, a query is a request template created with `static`: the first argument describes the type of the request, the parameters and the result rows combined with an arrow that also indicates the multiplicity of the result (`-->.` for no result, `-->?` for zero or one row, `-->*` for many rows), and the second argument is the SQL string itself, where the parameters are referenced positionally with `?`. Like with Doobie, the query ends up as a prepared statement with the right parameters. One small detail: the pgx driver has no native UUID parameter, so our `uuid` type binds as text and every bound id is cast with `?::uuid`.
+
+For the dynamic filtering of `select_where`, Caqti also has an answer to Doobie's fragments: a query can be composed as a value with the `Q` module, with `Q.lit`, `Q.cat` and `Q.concat ~sep:" AND "` playing the role of `whereAndOpt`. There is one important difference though: a Doobie fragment carries its own typed parameters, while a Caqti query template only references positions in a parameter type declared up front, so it cannot grow the parameter list fragment by fragment. Instead we embed the filter values directly in the query as typed constants with `Q.string`, which goes through Caqti's encoding and not plain string concatenation, and we create the request with `direct_gen` instead of `static`, since a query built per call cannot be a prepared statement with a static lifetime.
+
 ```ocaml
 module Q = struct
-  open Caqti_template.Create
+  open Caqti.Templater
 
   (* The `id` column is UUID but our Caqti `uuid` type binds as text (pgx has no
      native uuid parameter), so every bound id is cast with `?::uuid`. *)
@@ -270,33 +265,34 @@ module Q = struct
     static T.(uuid -->? task)
       "SELECT id, name, description, state, project FROM tasks WHERE id = ?::uuid"
 
-  (* Four list variants so every query stays statically typed and prepared. *)
-  let select_all =
-    static T.(unit -->* task)
-      "SELECT id, name, description, state, project FROM tasks"
-
-  let select_by_state =
-    static T.(task_status -->* task)
-      "SELECT id, name, description, state, project FROM tasks WHERE state = ?"
-
-  let select_by_project =
-    static T.(string -->* task)
-      "SELECT id, name, description, state, project FROM tasks WHERE project = ?"
-
-  let select_by_state_project =
-    static T.(t2 task_status string -->* task)
-      "SELECT id, name, description, state, project FROM tasks \
-       WHERE state = ? AND project = ?"
+  (* The WHERE clause is composed dynamically from the optional filters,
+     mirroring doobie's Fragments.whereAndOpt. Filter values are embedded as
+     typed constants (Q.string goes through Caqti's encoding, not plain string
+     concatenation), and the request is created with direct_gen since a
+     per-call query cannot be a statically prepared statement. *)
+  let select_where ?state ?project () =
+    let conds =
+      List.filter_map Fun.id
+        [ Option.map
+            (fun s ->
+              Q.cat (Q.lit "state = ") (Q.string (Tasks.task_status_to_string s)))
+            state
+        ; Option.map (fun p -> Q.cat (Q.lit "project = ") (Q.string p)) project ]
+    in
+    direct_gen T.(unit -->* task) @@ fun _ ->
+    Q.cat (Q.lit "SELECT id, name, description, state, project FROM tasks")
+      (match conds with
+       | [] -> Q.empty
+       | conds -> Q.cat (Q.lit " WHERE ") (Q.concat ~sep:" AND " conds))
 end
 ```
 
 ## Service layer
 
-<!-- TODO(prose): the service keeps the same interface as part 2, only the implementation
-     changes. Points worth making: transact(xa) vs Pool.use / with_conn; mapping the Postgres
-     unique_violation to AlreadyExists on both sides (SQLState "23505" vs Caqti_error.cause);
-     update relies on the affected row count in Doobie, but pgx does not report row counts so
-     the OCaml side does a SELECT first on the same connection. -->
+Now let's wire up all our SQL queries at the service level, our service will keep the same interface as in part 2.
+
+In Scala it's fairly simple, we just call all the methods of our query definitions. For insert, update and delete we generally have to call `myQuery(parameters).run.transact(transactor)`, where the extra `.run` allows us to get in return the number of rows affected by the query. For the select queries it will be `myQuery(parameters).to[List].transact(transactor)`, where `to[List]` allows us to tell what type of collection we want in return (or `.option` when we expect at most one row). And finally, if we want to handle SQL violations we just have to call `adaptError` and add the necessary code, in our case the only one we want to handle is the unique violation with code `23505`.
+
 
 ```scala
 class PostgresTaskService(xa: Transactor[IO]) extends TaskService {
@@ -330,9 +326,13 @@ class PostgresTaskService(xa: Transactor[IO]) extends TaskService {
 }
 ```
 
+In OCaml, every operation borrows a connection from the pool with a small `with_conn` helper built on `Pool.use`, which plays the role of `transact(transactor)`. A connection is a first-class module, and each request is executed with the method matching its multiplicity: `Db.exec` for statements with no result, `Db.find_opt` for zero or one row and `Db.collect_list` for many rows, so there is no equivalent of choosing between `.run` and `.to[List]` at the call site, the type of the request already decided it. Every call returns a `result`: for the domain errors we want to expose, like the unique violation, we pattern match on the error and inspect `Caqti.Error.cause`, which already classifies it as `` `Unique_violation ``: it is the same SQLSTATE `23505` underneath, but the driver does the mapping for us, so the magic number stays out of our code and the same match would keep working on another database backend. The remaining unexpected errors are raised as exceptions with `Caqti.Error.Exn` and turned into a 500 by Vif.
+
+One last difference: pgx does not report the number of affected rows, so `update` and `delete` cannot pattern match on a row count like the Scala side does. Instead they check that the task exists with a preliminary SELECT on the same borrowed connection.
+
 ```ocaml
 (* Raise a Caqti query error as an exception (turned into a 500 by Vif). *)
-let fail err = raise (Caqti_error.Exn (err :> Caqti_error.t))
+let fail err = raise (Caqti.Error.Exn (err :> Caqti.Error.t))
 
 (* Borrow a connection from the pool for [f]. *)
 let with_conn (pool : t) f =
@@ -343,20 +343,13 @@ let add (pool : t) (task : Tasks.task) : (unit, Tasks.error) result =
   match Db.exec Q.insert task with
   | Ok () -> Ok ()
   | Error (`Request_failed _ | `Response_failed _ as err)
-    when Caqti_error.cause err = `Unique_violation ->
+    when Caqti.Error.cause err = `Unique_violation ->
     Error (Tasks.Already_exists task.id)
   | Error err -> fail err
 
 let list ?state ?project (pool : t) : Tasks.task list =
   with_conn pool @@ fun (module Db : Caqti_miou.CONNECTION) ->
-  let result =
-    match state, project with
-    | None, None -> Db.collect_list Q.select_all ()
-    | Some s, None -> Db.collect_list Q.select_by_state s
-    | None, Some p -> Db.collect_list Q.select_by_project p
-    | Some s, Some p -> Db.collect_list Q.select_by_state_project (s, p)
-  in
-  Caqti_miou.or_fail result
+  Caqti_miou.or_fail (Db.collect_list (Q.select_where ?state ?project ()) ())
 
 (* Find a task on an already-borrowed connection. *)
 let find_conn (module Db : Caqti_miou.CONNECTION) id : Tasks.task option =
@@ -383,3 +376,11 @@ let update (pool : t) (task : Tasks.task) : (unit, Tasks.error) result =
          (task.name, task.description, task.state, task.project, task.id));
     Ok ()
 ``` 
+
+## Conclusion
+
+Adding SQL support to our project on both sides seems to confirm the conclusion I had in part 2, OCaml has everything it needs to write a standard API without any issue.
+
+In this case I don't have much more to say, but I think that the OCaml side is a little more verbose and complex than its Scala counterpart. Doobie with its `Fragment` API allows us to write dynamic queries very easily while keeping all the typechecking, and all the string interpolation in Doobie is a huge plus. It kind of bothers me that in OCaml, the king of type inference, you have to be explicit about the input and output types of your queries, but in the end if I was in a position to build services using OCaml and Caqti I would get used to it.
+
+After this article I don't know yet where I will go next, but maybe it would be nice to see how the two languages compare when we have to write tests against an external system, in our case against a PostgreSQL database.
