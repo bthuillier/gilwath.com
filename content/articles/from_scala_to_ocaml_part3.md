@@ -144,26 +144,26 @@ let () =
 
 ## Mapping rows to the domain
 
-<!-- TODO(prose): both columns for `state` are plain TEXT, so both sides build their mapping
-     on top of the built-in string type: Doobie's Meta[String].timap vs Caqti's Rt.custom.
-     The full-row mapping is where they diverge: Doobie derives Read/Write for the Task case
-     class automatically, Caqti asks us to spell out the product with proj/proj_end. -->
+Because we decided to encode the column `state` as plain **TEXT**, we have to build the mapping in our code from and to the database encoding.
+
+In Doobie the solution is simple, we just have to define a `given` `Meta` for our type. A `Meta` is a typeclass that allows us to make the mapping: we start with `Meta[String]`, since that is how it's stored in the database, and call the method `tiemap`, which allows us to provide the two methods for the mapping, `String => Either[String, State]` and `State => String`. The from-DB method returns an `Either` to allow us to handle bad values, in our case an unknown state.
+
+For the full row, Doobie relies on typeclass derivation: the `Read` typeclass describes how to read a row into a value, and `Read.derived` builds the instance for `Task` from the `Meta` of each of its fields. Doobie is also able to derive it automatically at each query site without this line, but explicit derivation is often the better practice: the instance is created once, and compile times and error messages stay under control.
 
 ```scala
 // The `state` column is a plain TEXT column, so we map the Scala `State`
 // enum to/from a String on top of the built-in Meta[String].
-private given Meta[State] =
-  Meta[String].timap {
-    case "Waiting"    => State.Waiting
-    case "InProgress" => State.InProgress
-    case "Done"       => State.Done
-    case other        => throw new IllegalArgumentException(s"unknown task state: $other")
-  } {
-    case State.Waiting    => "Waiting"
-    case State.InProgress => "InProgress"
-    case State.Done       => "Done"
-  }
+given Meta[State] =
+  Meta[String].tiemap(s => State.fromString(s).toRight(s"unknown task state: $s"))(_.toString)
+
+// Derive the row mapping for Task once here, instead of relying on doobie's
+// automatic derivation at every query site.
+given Read[Task] = Read.derived
 ```
+
+In Caqti, there is a bit more work to do. The mapping is built with the `Row_type` module (aliased as `Rt` below): we call `Rt.custom`, which plays the same role as `tiemap`, we start from `Rt.string`, since that is how it's stored in the database, and we provide the two functions `~encode` and `~decode`, both returning a `result` to allow us to handle bad values. Note that we also have to define a mapping for the `id` column, because Caqti has no built-in type for UUIDs, whereas Doobie gets one from the JDBC driver.
+
+The real difference with Scala shows up for the full row: what took a single `Read.derived` line in Scala has to be spelled out with `product` and one `proj` (projection) per field. Each `proj` pairs a column type with the accessor that reads the field, and the `intro` function rebuilds the record from the decoded columns. One last detail: these combinators come from `Caqti_template`, the new query API of Caqti, which is still marked as unstable, hence the `[@@@alert]` line to silence the warning.
 
 ```ocaml
 (* Caqti_template is a preview API; silence its instability alert. *)
