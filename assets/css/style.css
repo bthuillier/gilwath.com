@@ -12,9 +12,6 @@
   --ink:          #1a1715;
   --ink-muted:    #6b6864;
   --rule:         #d8d2c4;
-  --link:         #1a5a8a;  /* deep solarized blue, readable on cream */
-  --link-rule:    #268bd2;  /* solarized blue, used for the underline */
-  --link-hover:   #b58900;  /* solarized yellow, warms up on hover */
 
   /* Typo : stack système haut de gamme, fallback systématique.
      Si tu veux une rendu identique partout, ajoute en <head> :
@@ -145,27 +142,9 @@ a {
 }
 a:hover { text-decoration-color: var(--ink); }
 
-/* Article-body links get a touch of colour — chrome (header, nav,
-   footer, post list, CV) keeps the neutral rule above. */
-.article a {
-  color: var(--link);
-  text-decoration-color: var(--link-rule);
-}
-.article a:hover {
-  color: var(--link-hover);
-  text-decoration-color: var(--link-hover);
-}
-
-/* The article-meta block (date at the top, "← Back" at the bottom)
-   sits inside .article but is chrome, not prose — keep it neutral. */
-.article-meta a {
-  color: var(--ink-muted);
-  text-decoration-color: var(--rule);
-}
-.article-meta a:hover {
-  color: var(--ink);
-  text-decoration-color: var(--ink);
-}
+/* Chrome links (date at the top, "← Back" at the bottom) recede a bit. */
+.article-meta a { color: var(--ink-muted); }
+.article-meta a:hover { color: var(--ink); }
 
 em, i { font-style: italic; }
 strong, b { font-weight: 600; }
@@ -208,22 +187,23 @@ pre {
   line-height: 1.5;
   margin: var(--s-3) 0;
   font-size: .9rem;
-  border-left: 2px solid var(--rule);
 }
 
 /* ---------- Syntax highlighting -------------------------------
    Yocaml's markdown renderer emits TextMate-grammar class names
    (e.g. .ocaml-keyword, .ocaml-string-quoted-double). Palette is
-   Solarized-light, scoped to <pre><code> so inline code stays
+   near-monochrome, scoped to <pre><code> so inline code stays
    neutral. Tokens we don't style fall through to var(--ink). */
 pre code {
-  /* Solarized base palette, paper-friendly */
-  --syn-keyword:  #b58900;  /* yellow */
-  --syn-string:   #859900;  /* green  */
-  --syn-type:     #268bd2;  /* blue   */
-  --syn-function: #6c71c4;  /* violet */
-  --syn-constant: #d33682;  /* magenta */
-  --syn-comment:  #93a1a1;  /* base1  */
+  /* Monochrome palette: structure through tone, not colour.
+     Comments and punctuation recede, strings sit between,
+     everything else stays ink. */
+  --syn-keyword:  var(--ink);
+  --syn-string:   var(--ink-muted);
+  --syn-type:     var(--ink);
+  --syn-function: var(--ink);
+  --syn-constant: var(--ink);
+  --syn-comment:  #a8a49a;
   --syn-punct:    var(--ink-muted);
 }
 
@@ -552,40 +532,24 @@ pre code .shell-source { color: var(--ink); }
   color: var(--ink-muted);
   max-width: 32rem;          /* mesure plus courte = lecture rythmée */
   margin: 0 0 var(--s-5);
-  padding-left: var(--s-2);
-  border-left: 2px solid var(--rule);
 }
 
-/* Tags : petites étiquettes de sujet sous le chapeau de l'article. */
+/* Tags : simple liste de mots séparés par des points médians. */
 .tags {
   list-style: none;
   padding: 0;
   margin: 0 0 var(--s-5);
   display: flex;
   flex-wrap: wrap;
-  gap: var(--s-1);
-}
-
-.tags .tag {
+  gap: .35em;
   font-family: var(--font-sans);
   font-size: .8rem;
   color: var(--ink-muted);
-  background: var(--bg-soft);
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  padding: .15em .7em;
 }
 
-/* La lettrine ne doit pas s'appliquer au tagline si jamais il est
-   le premier <p> du conteneur — on la cible explicitement plus bas. */
-
-/* Lettrine sur le premier paragraphe — désactivable en retirant cette règle */
-.article > p:first-of-type:not(.tagline)::first-letter {
-  font-size: 3.4em;
-  float: left;
-  line-height: 0.9;
-  margin: 0.05em 0.08em 0 -0.04em;
-  font-weight: 400;
+.tags .tag:not(:last-child)::after {
+  content: "·";
+  margin-left: .35em;
 }
 
 /* ---------- CV ------------------------------------------------ */
