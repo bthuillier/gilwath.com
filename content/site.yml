@@ -18,5 +18,5 @@ lang: en
 og_image: /images/og-default.png
 
 # Browser UI accent (matches the site's --paper background).
-theme_color: "#fdfcf7"
+theme_color: "#fcfcfc"
 

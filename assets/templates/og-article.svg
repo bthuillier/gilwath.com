@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
-  <rect width="1200" height="630" fill="#fdfcf7"/>
+  <rect width="1200" height="630" fill="#fcfcfc"/>
 
-  <rect x="60" y="60" width="1080" height="510" fill="none" stroke="#d8cfb8" stroke-width="1.5"/>
+  <rect x="60" y="60" width="1080" height="510" fill="none" stroke="#dcdcdc" stroke-width="1.5"/>
 
   <text x="100" y="130"
         font-family="Georgia, 'Times New Roman', serif"
         font-size="22"
         font-weight="400"
         letter-spacing="3"
-        fill="#7a7060">
+        fill="#7a7a7a">
     FUNCTIONAL PROGRAMMER IN MOTION
   </text>
 
@@ -26,18 +26,18 @@
         font-family="Georgia, 'Times New Roman', serif"
         font-size="26"
         font-style="italic"
-        fill="#4a4030">{{ line }}</text>
+        fill="#4a4a4a">{{ line }}</text>
   {% endfor %}
   {% endif %}
 
-  <line x1="100" y1="540" x2="1100" y2="540" stroke="#d8cfb8" stroke-width="1"/>
+  <line x1="100" y1="540" x2="1100" y2="540" stroke="#dcdcdc" stroke-width="1"/>
   <text x="100" y="560"
         font-family="Georgia, 'Times New Roman', serif"
         font-size="18"
-        fill="#7a7060">{{ author }}</text>
+        fill="#7a7a7a">{{ author }}</text>
   <text x="1100" y="560"
         font-family="Georgia, 'Times New Roman', serif"
         font-size="18"
-        fill="#7a7060"
+        fill="#7a7a7a"
         text-anchor="end">{{ url }}</text>
 </svg>

@@ -6,12 +6,12 @@
 
 /* ---------- Design tokens ------------------------------------- */
 :root {
-  /* Couleurs : ton chaud, pas de blanc/noir purs */
-  --bg:           #fdfcf7;
-  --bg-soft:      #f5f1e6;
-  --ink:          #1a1715;
-  --ink-muted:    #6b6864;
-  --rule:         #d8d2c4;
+  /* Couleurs : gris neutres, presque noir sur presque blanc */
+  --bg:           #fcfcfc;
+  --bg-soft:      #f4f4f4;
+  --ink:          #191919;
+  --ink-muted:    #6e6e6e;
+  --rule:         #dcdcdc;
 
   /* Typo : stack système haut de gamme, fallback systématique.
      Si tu veux une rendu identique partout, ajoute en <head> :
@@ -195,17 +195,40 @@ pre {
    near-monochrome, scoped to <pre><code> so inline code stays
    neutral. Tokens we don't style fall through to var(--ink). */
 pre code {
-  /* Monochrome palette: structure through tone, not colour.
-     Comments and punctuation recede, strings sit between,
-     everything else stays ink. */
+  /* Quiet palette: desaturated tones at similar lightness, so colour
+     hints at structure without shouting. Keywords stay bold ink
+     (see the weight rules below), comments light italic. */
   --syn-keyword:  var(--ink);
-  --syn-string:   var(--ink-muted);
-  --syn-type:     var(--ink);
-  --syn-function: var(--ink);
-  --syn-constant: var(--ink);
-  --syn-comment:  #a8a49a;
-  --syn-punct:    var(--ink-muted);
+  --syn-string:   #5e7a5e;  /* sage green */
+  --syn-type:     #47617a;  /* slate blue */
+  --syn-function: #705d84;  /* muted violet */
+  --syn-constant: #93524a;  /* soft brick */
+  --syn-comment:  #a6a6a6;
+  --syn-punct:    #8a8a8a;
 }
+
+/* Keywords carry weight instead of colour — declaration and control
+   keywords only; operators and punctuation stay regular. */
+pre code .ocaml-keyword,
+pre code .ocaml-keyword-other,
+pre code .scala-keyword-declaration,
+pre code .scala-keyword-declaration-stable,
+pre code .scala-keyword-declaration-volatile,
+pre code .scala-keyword-control-flow,
+pre code .scala-keyword-control-flow-jump,
+pre code .scala-keyword-control-exception,
+pre code .scala-keyword-type,
+pre code .scala-keyword-other-import,
+pre code .scala-keyword-other-export,
+pre code .scala-keyword-other-package,
+pre code .scala-storage-modifier,
+pre code .dune-keyword-other,
+pre code .bash-keyword-control,
+pre code .sh-keyword-control,
+pre code .shell-keyword-control { font-weight: 600; }
+
+/* Comments read as asides: italic on top of their light gray. */
+pre code [class*="comment"] { font-style: italic; }
 
 /* Keywords: let, type, in, match, fun, module, open, etc. */
 pre code .ocaml-keyword,
@@ -230,9 +253,19 @@ pre code .ocaml-entity-name-function-binding {
 pre code .ocaml-constant-language,
 pre code .ocaml-constant-language-capital-identifier,
 pre code .ocaml-constant-language-list,
-pre code .ocaml-constant-language-polymorphic-variant {
+pre code .ocaml-constant-language-polymorphic-variant,
+pre code .ocaml-constant-language-unit,
+pre code .ocaml-constant-language-boolean,
+pre code .ocaml-constant-numeric-decimal-integer {
   color: var(--syn-constant);
 }
+
+/* Escapes and printf directives inside strings. */
+pre code .ocaml-constant-character-escape,
+pre code .ocaml-constant-character-printf { color: var(--syn-string); }
+
+/* Comments. */
+pre code .ocaml-comment-block { color: var(--syn-comment); }
 
 /* Punctuation (commas, semicolons, dots) — keep readable but
    recessive; the grammar groups them as keyword-other-ocaml,
@@ -271,12 +304,19 @@ pre code .scala-keyword-operator-comparison,
 pre code .scala-keyword-operator-logical,
 pre code .scala-keyword-other-arrow { color: var(--syn-keyword); }
 
-/* Strings (single, triple, interpolated) and escapes. */
+/* Strings (single, triple, interpolated), their quote delimiters,
+   the interpolator prefix (s"", f"") and escapes. The grammar emits
+   `…-interpolated-scala` variants on interpolated-string delimiters. */
 pre code .scala-string-quoted-single,
 pre code .scala-string-quoted-double,
 pre code .scala-string-quoted-triple,
 pre code .scala-string-quoted-double-interpolated,
 pre code .scala-string-quoted-triple-interpolated,
+pre code .scala-string-quoted-double-interpolated-scala,
+pre code .scala-string-quoted-triple-interpolated-scala,
+pre code .scala-punctuation-definition-string-begin,
+pre code .scala-punctuation-definition-string-end,
+pre code .scala-keyword-interpolation,
 pre code .scala-constant-character-escape { color: var(--syn-string); }
 
 /* Type names and class/type entity names. The bare .scala-entity-name
@@ -284,11 +324,13 @@ pre code .scala-constant-character-escape { color: var(--syn-string); }
 pre code .scala-entity-name,
 pre code .scala-entity-name-type,
 pre code .scala-entity-name-class,
+pre code .scala-entity-name-class-import,
 pre code .scala-support-function-type-of { color: var(--syn-type); }
 
-/* Function and given names in definitions. */
+/* Function and given names in definitions, and val/var binding names. */
 pre code .scala-entity-name-function,
-pre code .scala-entity-name-given { color: var(--syn-function); }
+pre code .scala-entity-name-given,
+pre code .scala-variable-stable-declaration { color: var(--syn-function); }
 
 /* Literals: numbers, language constants (true/false/null), symbols. */
 pre code .scala-constant-numeric,
@@ -296,16 +338,22 @@ pre code .scala-constant-language,
 pre code .scala-constant-other-symbol,
 pre code .scala-variable-language { color: var(--syn-constant); }
 
-/* Comments. */
+/* Comments, including the leading // and its whitespace. */
 pre code .scala-comment-line-double-slash,
 pre code .scala-comment-block,
-pre code .scala-comment-block-documentation { color: var(--syn-comment); }
+pre code .scala-comment-block-documentation,
+pre code .scala-punctuation-definition-comment,
+pre code .scala-punctuation-whitespace-comment-leading { color: var(--syn-comment); }
 
-/* Punctuation — recessive, like OCaml's. */
+/* Punctuation — recessive, like OCaml's. Includes type-ascription
+   colons and the ${ } delimiters of string interpolations. */
 pre code .scala-punctuation-definition,
 pre code .scala-punctuation-section-block-begin,
 pre code .scala-punctuation-section-block-end,
 pre code .scala-punctuation-separator-namespace,
+pre code .scala-meta-colon,
+pre code .scala-punctuation-definition-template-expression-begin,
+pre code .scala-punctuation-definition-template-expression-end,
 pre code .scala-meta-bracket { color: var(--syn-punct); }
 
 /* Catch-all source span resets to default ink, mirroring OCaml. */
