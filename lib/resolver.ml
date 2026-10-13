@@ -22,13 +22,17 @@ module Source = struct
   let assets res = Path.(source_root res / "assets")
   let images res = Path.(assets res / "images")
   let css res = Path.(assets res / "css")
+  let stylesheets res = Path.[ css res / "reset.css"; css res / "style.css" ]
+  let og_default_svg res = Path.(assets res / "og-default.svg")
   let templates res = Path.(assets res / "templates")
-
-  let resolve_templates resolver names =
-    List.map (fun n -> Path.(templates resolver / n)) names
-  ;;
-
-  let og_article_template res = Path.(templates res / "og-article.svg")
+  let template res file = Path.(templates res / file)
+  let layout res = template res "layout.html"
+  let page_template res = template res "page.html"
+  let article_template res = template res "article.html"
+  let index_template res = template res "index.html"
+  let blog_template res = template res "blog.html"
+  let cv_template res = template res "cv.html"
+  let og_article_template res = template res "og-article.svg"
 
   (* Content *)
   let content res = Path.(source_root res / "content")
@@ -47,6 +51,7 @@ module Target = struct
   let cache res = Path.(target_root res / ".cache")
   let images res = Path.(target_root res / "images")
   let og_dir res = Path.(images res / "og")
+  let og_default_png res = Path.(images res / "og-default.png")
 
   let article_og_svg res source =
     source |> Path.move ~into:(og_dir res) |> Path.change_extension "svg"
@@ -86,6 +91,8 @@ module Target = struct
   let cv res = Path.(target_root res / "cv.html")
   let blog res = Path.(target_root res / "blog.html")
   let atom res = Path.(target_root res / "atom.xml")
+  let robots res = Path.(target_root res / "robots.txt")
+  let sitemap res = Path.(target_root res / "sitemap.xml")
 end
 
 module Server = struct

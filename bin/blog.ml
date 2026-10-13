@@ -188,14 +188,9 @@ let document_path resolver document_kind path =
   path |> into
 ;;
 
-let get_specific_template resolver document_kind =
-  let templates = Resolver.Source.templates resolver in
-  let file =
-    match document_kind with
-    | Page -> "page.html"
-    | Article -> "article.html"
-  in
-  Path.(templates / file)
+let get_specific_template resolver = function
+  | Page -> Resolver.Source.page_template resolver
+  | Article -> Resolver.Source.article_template resolver
 ;;
 
 let document_archetype : document_kind -> (module ARCHETYPE) = function
@@ -261,10 +256,9 @@ let create_document resolver ~site document_kind source =
     let+ () = track_deps resolver
     and+ templates =
       Yocaml_jingoo.read_templates
-        Path.
-          [ get_specific_template resolver document_kind
-          ; Resolver.Source.templates resolver / "layout.html"
-          ]
+        [ get_specific_template resolver document_kind
+        ; Resolver.Source.layout resolver
+        ]
     and+ metadata, content =
       Yocaml_yaml.Pipeline.read_file_with_metadata (module Archetype) source
     in
@@ -321,9 +315,8 @@ let create_index resolver ~site =
     ~source:(Resolver.Source.index resolver)
     ~into:(Resolver.Target.target_root resolver)
     ~templates:
-      (Resolver.Source.resolve_templates
-         resolver
-         [ "index.html"; "page.html"; "layout.html" ])
+      Resolver.Source.
+        [ index_template resolver; page_template resolver; layout resolver ]
 ;;
 
 let create_blog resolver ~site =
@@ -332,10 +325,7 @@ let create_blog resolver ~site =
     ~site
     ~source:(Resolver.Source.blog resolver)
     ~into:(Resolver.Target.target_root resolver)
-    ~templates:
-      (Resolver.Source.resolve_templates
-         resolver
-         [ "blog.html"; "layout.html" ])
+    ~templates:Resolver.Source.[ blog_template resolver; layout resolver ]
 ;;
 
 let create_cv resolver ~site =
@@ -346,9 +336,7 @@ let create_cv resolver ~site =
     let+ () = track_deps resolver
     and+ templates =
       Yocaml_jingoo.read_templates
-        (Resolver.Source.resolve_templates
-           resolver
-           [ "cv.html"; "layout.html" ])
+        Resolver.Source.[ cv_template resolver; layout resolver ]
     and+ experiences = fetch_experiences resolver
     and+ education = fetch_education resolver
     and+ metadata, content =
@@ -380,10 +368,6 @@ let copy_images resolver =
    The per-article SVGs are build outputs, but they must still be watched:
    otherwise the PNG is only produced when missing and goes stale whenever
    the SVG template or the article metadata changes. *)
-let og_default_svg resolver =
-  Path.(Resolver.Source.assets resolver / "og-default.svg")
-;;
-
 let invoke_rsvg ~track_input svg_path target =
   let open Cmd in
   make
@@ -397,8 +381,8 @@ let invoke_rsvg ~track_input svg_path target =
 
 let render_og_image resolver =
   Action.exec_cmd
-    (invoke_rsvg ~track_input:true (og_default_svg resolver))
-    Path.(Resolver.Target.images resolver / "og-default.png")
+    (invoke_rsvg ~track_input:true (Resolver.Source.og_default_svg resolver))
+    (Resolver.Target.og_default_png resolver)
 ;;
 
 (* Greedy word-wrap to [max_chars] per line, capped at [max_lines]. Overflow
@@ -521,9 +505,7 @@ let copy_cname = copy_asset_to_root "CNAME"
 let copy_favicon = copy_asset_to_root "favicon.svg"
 
 let create_robots resolver ~site =
-  let robots_path =
-    Path.(Resolver.Target.target_root resolver / "robots.txt")
-  in
+  let robots_path = Resolver.Target.robots resolver in
   let body =
     Printf.sprintf
       "User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n"
@@ -540,9 +522,7 @@ let create_robots resolver ~site =
 (* The article paths are absolute under [/articles/]; the schema requires a
    full URL, so we prefix them with the site origin. *)
 let create_sitemap resolver ~site =
-  let sitemap_path =
-    Path.(Resolver.Target.target_root resolver / "sitemap.xml")
-  in
+  let sitemap_path = Resolver.Target.sitemap resolver in
   let url loc =
     Printf.sprintf "  <url><loc>%s%s</loc></url>" (Site.url site) loc
   in
@@ -601,14 +581,11 @@ let create_sitemap resolver ~site =
 
 let create_css resolver =
   let css_path = Resolver.Target.style_css resolver in
-  let css = Resolver.Source.css resolver in
   let pipeline =
     let open Task in
     let+ () = track_binary
     and+ content =
-      Pipeline.pipe_files
-        ~separator:"\n"
-        Path.[ css / "reset.css"; css / "style.css" ]
+      Pipeline.pipe_files ~separator:"\n" (Resolver.Source.stylesheets resolver)
     in
     content
   in

@@ -16,8 +16,15 @@ module Source : sig
   val assets : t -> Path.t
   val images : t -> Path.t
   val css : t -> Path.t
+  val stylesheets : t -> Path.t list
+  val og_default_svg : t -> Path.t
   val templates : t -> Path.t
-  val resolve_templates : t -> string list -> Path.t list
+  val layout : t -> Path.t
+  val page_template : t -> Path.t
+  val article_template : t -> Path.t
+  val index_template : t -> Path.t
+  val blog_template : t -> Path.t
+  val cv_template : t -> Path.t
   val og_article_template : t -> Path.t
 
   (* Content *)
@@ -37,6 +44,7 @@ module Target : sig
   val cache : t -> Path.t
   val images : t -> Path.t
   val og_dir : t -> Path.t
+  val og_default_png : t -> Path.t
   val article_og_svg : t -> Path.t -> Path.t
   val article_og_png : t -> Path.t -> Path.t
   val article_og_url : Path.t -> string
@@ -48,6 +56,8 @@ module Target : sig
   val cv : t -> Path.t
   val blog : t -> Path.t
   val atom : t -> Path.t
+  val robots : t -> Path.t
+  val sitemap : t -> Path.t
 end
 
 module Server : sig
