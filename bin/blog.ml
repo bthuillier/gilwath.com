@@ -377,9 +377,9 @@ let copy_images resolver =
    the input so the cache invalidates whenever it changes; the [target] is
    filled in by [Action.exec_cmd], like in the official [d2] example.
 
-   [~watched:true] only matters for source SVGs (the default card). The
-   per-article SVGs are themselves build outputs, so they're already tracked
-   by the previous [write_static_file] action and we pass [watched:false]. *)
+   The per-article SVGs are build outputs, but they must still be watched:
+   otherwise the PNG is only produced when missing and goes stale whenever
+   the SVG template or the article metadata changes. *)
 let og_default_svg resolver =
   Path.(Resolver.Source.assets resolver / "og-default.svg")
 ;;
@@ -489,7 +489,7 @@ let create_article_og_svg resolver ~site source =
 let create_article_og_png resolver source =
   let svg = Resolver.Target.article_og_svg resolver source in
   let png = Resolver.Target.article_og_png resolver source in
-  Action.exec_cmd (invoke_rsvg ~track_input:false svg) png
+  Action.exec_cmd (invoke_rsvg ~track_input:true svg) png
 ;;
 
 (* Compose the SVG and PNG actions for one article. [Action.t] is just
