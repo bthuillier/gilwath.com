@@ -15,17 +15,17 @@
    "My first personal blog using YOCaml for
    fun and profit")
  (depends
-  (ocaml (>= 5.3.0))
-  (yocaml (>= 2.5.0))
-  (yocaml_unix (>= 2.5.0))
+  (ocaml (>= 5.5.0))
+  (yocaml (>= 3.0.0))
+  (yocaml_unix (>= 3.0.0))
   cmarkit
   hilite
   yojson
   textmate-language
-  (yocaml_yaml (>= 2.5.0))
-  (yocaml_markdown (>= 2.5.0))
-  (yocaml_jingoo (>= 2.5.0))
-  (yocaml_syndication (>= 2.5.0))
+  (yocaml_yaml (>= 3.0.0))
+  (yocaml_markdown (>= 3.0.0))
+  (yocaml_jingoo (>= 3.0.0))
+  (yocaml_syndication (>= 3.0.0))
   
   ;; Dev setup
   (utop :with-dev-setup)

@@ -12,17 +12,17 @@ homepage: "https://github.com/bthuillier/blog"
 bug-reports: "https://github.com/bthuillier/blog/issues"
 depends: [
   "dune" {>= "3.20"}
-  "ocaml" {>= "5.3.0"}
-  "yocaml" {>= "2.5.0"}
-  "yocaml_unix" {>= "2.5.0"}
+  "ocaml" {>= "5.5.0"}
+  "yocaml" {>= "3.0.0"}
+  "yocaml_unix" {>= "3.0.0"}
   "cmarkit"
   "hilite"
   "yojson"
   "textmate-language"
-  "yocaml_yaml" {>= "2.5.0"}
-  "yocaml_markdown" {>= "2.5.0"}
-  "yocaml_jingoo" {>= "2.5.0"}
-  "yocaml_syndication" {>= "2.5.0"}
+  "yocaml_yaml" {>= "3.0.0"}
+  "yocaml_markdown" {>= "3.0.0"}
+  "yocaml_jingoo" {>= "3.0.0"}
+  "yocaml_syndication" {>= "3.0.0"}
   "utop" {with-dev-setup}
   "ocamlformat" {with-dev-setup}
   "ocp-indent" {with-dev-setup}
