@@ -5,6 +5,7 @@
 ; Embed the Scala TextMate grammar into the library at build time so the
 ; generator doesn't depend on the file being present at run time. The rule
 ; turns scala.tmLanguage.json into an OCaml module exposing it as a string.
+
 (rule
  (target scala_grammar.ml)
  (deps scala.tmLanguage.json)
