@@ -61,7 +61,7 @@ trait Debuggable[T] {
 ```
 As you can see we add `extension (x: T) def debug: String`. This is how we will be able to call a `.debug` method directly on our classes.
 
-When we use automatic derivation in Scala, the compiler won't be able to generate instances automatically for some key primitive types like `String`, `Boolean` and `Int`, nor for conditional instances like `List`, `Map` and `Option`, because none of them expose a `Mirror` we can recurse into, so we will have to define these instances ourselves. For the primitive types we declare instances like this:
+When we use automatic derivation in Scala, the compiler won't be able to generate instances automatically for some key primitive types like `String`, `Boolean` and `Int`, because they don't expose a `Mirror` we can recurse into. `List` and `Option` do have one, but a derived instance would print their internal structure (`some{value=1}`), and `Map` has none. So we will have to define these instances ourselves. For the primitive types we declare instances like this:
 
 ```scala
 given Debuggable[Int] with
@@ -219,11 +219,11 @@ object DebugArg:
 
 Because this is an implicit `Conversion`, we need to enable the feature at the call site with `import scala.language.implicitConversions`. With a missing `Debuggable[T]`, the conversion fails to apply and we get a compile error right at the offending `$arg`.
 
-Now we can create the interpolator itself, which just delegates to the standard `s` interpolator after pre-rendering each argument:
+Now we can create the interpolator itself, which delegates to the standard `s` interpolator after pre-rendering each argument and prints the result, so we don't need to wrap it in `println`:
 
 ```scala
 extension (sc: StringContext)
-  def debug(args: DebugArg*): String = sc.s(args.map(_.rendered)*)
+  def debug(args: DebugArg*): Unit = println(sc.s(args.map(_.rendered)*))
 ```
 
 And here it is in action:
@@ -235,8 +235,10 @@ val alice = Person("Alice", 30)
 val shape: Shape = Shape.Circle(1.5)
 
 debug"user=$alice, shape=$shape"
-// user=person{name=Alice, age=30}, shape=circle{radius=1.5}
+// prints: user=person{name=Alice, age=30}, shape=circle{radius=1.5}
 ```
+
+*Update: the first version of this interpolator returned a `String`, so you had to write `println(debug"...")`. It now prints the result itself.*
 
 
 ## Wrapping up
@@ -247,16 +249,16 @@ Let's recap what we built. Starting from nothing but a `Debuggable[T]` trait, we
 - **`inline` metaprogramming** (`erasedValue`, `constValue`, `inline match`) bridges the type level and the value level, turning those compile-time types into the runtime `List[Debuggable[?]]` and `List[String]` we actually need.
 - **`summonFrom`** makes derivation recursive: each field is either summoned from an existing instance or derived on the spot, so nested types and enum cases are handled without us writing a line for them.
 
-This is not just a toy. It is exactly the technique that libraries like [Circe](https://circe.github.io/circe/) use to derive JSON encoders and decoders for your types. The only real difference is that our `debug` produces a `String`, whereas a JSON codec produces a JSON AST: same `Mirror`, same recursion, different output type. You can see this for yourself in Circe's [Scala 3 derivation source](https://github.com/circe/circe/blob/series/0.14.x/modules/core/shared/src/main/scala-3/io/circe/derivation/package.scala), where `summonLabels`, `summonEncoder`/`summonDecoder` and the `Mirror.SumOf`/`Mirror.ProductOf` dispatch map almost one-to-one onto the `labelsOf`, `summonAll` and `inline match` we wrote here. We also saw, as a bonus, how to write a custom string interpolator by adding an extension method to `StringContext`.
+This is not just a toy. It is exactly the technique that libraries like [Circe](https://circe.github.io/circe/) use to derive JSON encoders and decoders for your types. The only real difference is that our `debug` produces a `String`, whereas a JSON codec produces a JSON AST: same `Mirror`, same recursion, different output type. You can see this for yourself in Circe's [Scala 3 derivation source](https://github.com/circe/circe/blob/series/0.14.x/modules/core/shared/src/main/scala-3/io/circe/derivation/package.scala), where `summonLabels`, `summonEncoders`/`summonDecoders`, `summonEncoder`/`summonDecoder` and the `Mirror.SumOf`/`Mirror.ProductOf` dispatch map almost one-to-one onto the `labelsOf`, `summonAll`, `deriveOrSummon` and `inline match` we wrote here. We also saw, as a bonus, how to write a custom string interpolator by adding an extension method to `StringContext`.
 
 If you take one thing away from this article, let it be that automatic derivation in Scala 3 is not compiler magic. It is ordinary code that happens to run at compile time, and now you can write it yourself.
 
 ## Running the full example
 
-The complete code is available as a [gist](https://gist.github.com/bthuillier/4f65135b17bd41f41adcb862ef6fd223). You can run it directly with [scala-cli](https://scala-cli.virtuslab.org/):
+The complete code is available as a [gist](https://gist.github.com/bthuillier/4f65135b17bd41f41adcb862ef6fd223). You can run it directly with the `scala` command (since Scala 3.5 it is powered by [scala-cli](https://scala-cli.virtuslab.org/)):
 
 ```bash
-scala-cli https://gist.github.com/bthuillier/4f65135b17bd41f41adcb862ef6fd223
+scala https://gist.github.com/bthuillier/4f65135b17bd41f41adcb862ef6fd223
 ```
 
 Thanks to [@ppurang](https://mastodon.social/@ppurang/116698440187229043) for two improvements that made it into that version: the many `given` witnesses now live inside the `Debuggable` companion object, and the unused `Mirror.ProductOf[T]` parameter in `productDebuggable` was dropped.

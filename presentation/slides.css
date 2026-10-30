@@ -1,0 +1,194 @@
+/* ---------------------------------------------------------------
+   Slides DZSlides, style repris du blog (assets/css/style.css) :
+   typographique, presque noir sur presque blanc, pas de couleur.
+   Avec --css, pandoc n'inclut plus le <style> par défaut du
+   template : les règles de navigation (position des slides,
+   transitions, listes incrémentales) sont donc reprises en bas.
+   --------------------------------------------------------------- */
+
+:root {
+  --bg:        #fcfcfc;
+  --bg-soft:   #f4f4f4;
+  --ink:       #191919;
+  --ink-muted: #6e6e6e;
+  --rule:      #dcdcdc;
+
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino,
+                "Hoefler Text", "Charter", Cambria, Georgia, serif;
+  --font-mono:  ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+  --syn-string:   #5e7a5e;
+  --syn-type:     #47617a;
+  --syn-function: #705d84;
+  --syn-constant: #93524a;
+  --syn-comment:  #a6a6a6;
+  --syn-punct:    #8a8a8a;
+}
+
+/* ---------- Canevas 16:9 (1280x720, mis à l'échelle par Dz) ---- */
+html, html.view body { background-color: #111; }
+
+html body {
+  width: 1280px; height: 720px;
+  margin-left: -640px; margin-top: -360px;
+}
+
+html body, html.view section {
+  background-color: var(--bg);
+  border-radius: 0;
+}
+
+html section {
+  box-sizing: border-box;
+  padding: 64px 96px;
+  font-family: var(--font-serif);
+  font-size: 30px;
+  line-height: 1.5;
+  color: var(--ink);
+  font-feature-settings: "kern", "liga", "onum";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Vue d'ensemble (touche Échap) */
+html.view section {
+  width: 1280px; height: 720px;
+  margin: -216px -384px;
+}
+html.view section[aria-selected] { outline: 6px solid var(--ink); border: 0; }
+html.view section:after { color: var(--ink-muted); }
+html.view head > title { color: var(--bg); font-family: var(--font-serif); text-align: center; margin: 1em 0; }
+
+/* ---------- Titres -------------------------------------------- */
+html section h1 {
+  margin: 0 0 40px;
+  text-align: left;
+  font-size: 52px;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+/* Slide titre */
+html section.title {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+html section.title h1.title { font-size: 68px; margin-bottom: 24px; }
+html section.title h1.subtitle {
+  font-size: 32px;
+  font-style: italic;
+  color: var(--ink-muted);
+}
+html section.title footer {
+  position: static;
+  padding: 48px 0 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  font-size: 26px;
+  color: var(--ink-muted);
+}
+/* Masque le « · » que le template ajoute après l'auteur quand il n'y a pas de date */
+html section.title footer { font-size: 0; }
+html section.title footer span { font-size: 26px; }
+
+/* ---------- Texte --------------------------------------------- */
+html section p { margin: 0 0 24px; font-size: 30px; }
+
+html section ul, html section ol { margin: 0 0 24px; padding-left: 1.2em; }
+html section li { margin-bottom: 12px; }
+html section li > ul { margin: 8px 0 0; }
+
+html section strong { font-weight: 600; }
+
+html section blockquote {
+  height: auto;
+  margin: 0 0 32px;
+  padding: 0 0 0 28px;
+  border-left: 3px solid var(--rule);
+  background: none;
+  color: var(--ink-muted);
+  font-size: 28px;
+  font-style: italic;
+}
+html section blockquote:before, html section blockquote:after { content: none; }
+html section blockquote p { font-size: inherit; margin-bottom: 12px; }
+
+html section a { color: var(--ink); text-decoration-color: var(--rule); }
+
+/* ---------- Code ---------------------------------------------- */
+html section code { font-family: var(--font-mono); font-size: .85em; }
+html section :not(pre) > code {
+  background: var(--bg-soft);
+  padding: .05em .3em;
+  border-radius: 4px;
+}
+
+html section div.sourceCode, html section pre {
+  margin: 0 0 28px;
+  background: var(--bg-soft);
+}
+html section pre {
+  padding: 20px 28px;
+  font-size: 20px;
+  line-height: 1.45;
+  overflow: hidden;
+}
+html section pre > code { font-size: inherit; background: none; padding: 0; }
+html section pre > code.sourceCode > span { line-height: 1.45; }
+
+/* Coloration pandoc, palette sourde du blog */
+html section pre code span.kw,
+html section pre code span.cf { color: var(--ink); font-weight: 600; }
+html section pre code span.st,
+html section pre code span.ss,
+html section pre code span.ch,
+html section pre code span.vs { color: var(--syn-string); }
+html section pre code span.dt { color: var(--syn-type); }
+html section pre code span.fu { color: var(--syn-function); }
+html section pre code span.dv,
+html section pre code span.fl,
+html section pre code span.bn,
+html section pre code span.cn { color: var(--syn-constant); }
+html section pre code span.co { color: var(--syn-comment); font-style: italic; }
+html section pre code span.op,
+html section pre code span.ot { color: var(--syn-punct); }
+
+/* ---------- Tableaux ------------------------------------------ */
+html section table {
+  border-collapse: collapse;
+  margin: 0 0 32px;
+  font-size: 26px;
+}
+html section th, html section td {
+  padding: 10px 28px 10px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+}
+html section th { font-weight: 600; }
+
+/* ---------- Notes : seulement dans onstage.html --------------- */
+html section .notes { display: none; }
+
+html #progress-bar { height: 3px; background: var(--ink-muted); }
+
+/* ---------- Navigation (repris du template dzslides) ---------- */
+html.view body { counter-reset: slideidx; }
+html.view section:after {
+  counter-increment: slideidx;
+  content: counter(slideidx, decimal-leading-zero);
+  position: absolute; bottom: -80px; right: 100px;
+  color: var(--ink-muted);
+}
+
+section { transition: left 300ms ease-out; }
+.view section { transition: none; }
+
+section { left: -150%; }
+section[aria-selected] { left: 0; }
+section[aria-selected] ~ section { left: +150%; }
+
+.incremental > * { opacity: 1; }
+.incremental > *[aria-selected] { opacity: 1; }
+.incremental > *[aria-selected] ~ * { opacity: 0; }

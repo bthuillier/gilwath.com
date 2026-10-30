@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<head lang="fr">
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="author" content="Benjamin Thuillier">
+  <title>La dérivation automatique de typeclasses en Scala 3</title>
+  <style>
+
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+  <style type="text/css">
+:root {
+--bg: #fcfcfc;
+--bg-soft: #f4f4f4;
+--ink: #191919;
+--ink-muted: #6e6e6e;
+--rule: #dcdcdc;
+--font-serif: "Iowan Old Style", "Palatino Linotype", Palatino,
+"Hoefler Text", "Charter", Cambria, Georgia, serif;
+--font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+--syn-string: #5e7a5e;
+--syn-type: #47617a;
+--syn-function: #705d84;
+--syn-constant: #93524a;
+--syn-comment: #a6a6a6;
+--syn-punct: #8a8a8a;
+}
+
+html, html.view body { background-color: #111; }
+html body {
+width: 1280px; height: 720px;
+margin-left: -640px; margin-top: -360px;
+}
+html body, html.view section {
+background-color: var(--bg);
+border-radius: 0;
+}
+html section {
+box-sizing: border-box;
+padding: 64px 96px;
+font-family: var(--font-serif);
+font-size: 30px;
+line-height: 1.5;
+color: var(--ink);
+font-feature-settings: "kern", "liga", "onum";
+-webkit-font-smoothing: antialiased;
+}
+
+html.view section {
+width: 1280px; height: 720px;
+margin: -216px -384px;
+}
+html.view section[aria-selected] { outline: 6px solid var(--ink); border: 0; }
+html.view section:after { color: var(--ink-muted); }
+html.view head > title { color: var(--bg); font-family: var(--font-serif); text-align: center; margin: 1em 0; }
+
+html section h1 {
+margin: 0 0 40px;
+text-align: left;
+font-size: 52px;
+font-weight: 400;
+line-height: 1.15;
+letter-spacing: -0.02em;
+}
+
+html section.title {
+display: flex;
+flex-direction: column;
+justify-content: center;
+}
+html section.title h1.title { font-size: 68px; margin-bottom: 24px; }
+html section.title h1.subtitle {
+font-size: 32px;
+font-style: italic;
+color: var(--ink-muted);
+}
+html section.title footer {
+position: static;
+padding: 48px 0 0;
+background: none;
+border: 0;
+text-align: left;
+font-size: 26px;
+color: var(--ink-muted);
+}
+
+html section.title footer { font-size: 0; }
+html section.title footer span { font-size: 26px; }
+
+html section p { margin: 0 0 24px; font-size: 30px; }
+html section ul, html section ol { margin: 0 0 24px; padding-left: 1.2em; }
+html section li { margin-bottom: 12px; }
+html section li > ul { margin: 8px 0 0; }
+html section strong { font-weight: 600; }
+html section blockquote {
+height: auto;
+margin: 0 0 32px;
+padding: 0 0 0 28px;
+border-left: 3px solid var(--rule);
+background: none;
+color: var(--ink-muted);
+font-size: 28px;
+font-style: italic;
+}
+html section blockquote:before, html section blockquote:after { content: none; }
+html section blockquote p { font-size: inherit; margin-bottom: 12px; }
+html section a { color: var(--ink); text-decoration-color: var(--rule); }
+
+html section code { font-family: var(--font-mono); font-size: .85em; }
+html section :not(pre) > code {
+background: var(--bg-soft);
+padding: .05em .3em;
+border-radius: 4px;
+}
+html section div.sourceCode, html section pre {
+margin: 0 0 28px;
+background: var(--bg-soft);
+}
+html section pre {
+padding: 20px 28px;
+font-size: 20px;
+line-height: 1.45;
+overflow: hidden;
+}
+html section pre > code { font-size: inherit; background: none; padding: 0; }
+html section pre > code.sourceCode > span { line-height: 1.45; }
+
+html section pre code span.kw,
+html section pre code span.cf { color: var(--ink); font-weight: 600; }
+html section pre code span.st,
+html section pre code span.ss,
+html section pre code span.ch,
+html section pre code span.vs { color: var(--syn-string); }
+html section pre code span.dt { color: var(--syn-type); }
+html section pre code span.fu { color: var(--syn-function); }
+html section pre code span.dv,
+html section pre code span.fl,
+html section pre code span.bn,
+html section pre code span.cn { color: var(--syn-constant); }
+html section pre code span.co { color: var(--syn-comment); font-style: italic; }
+html section pre code span.op,
+html section pre code span.ot { color: var(--syn-punct); }
+
+html section table {
+border-collapse: collapse;
+margin: 0 0 32px;
+font-size: 26px;
+}
+html section th, html section td {
+padding: 10px 28px 10px 0;
+text-align: left;
+border-bottom: 1px solid var(--rule);
+}
+html section th { font-weight: 600; }
+
+html section .notes { display: none; }
+html #progress-bar { height: 3px; background: var(--ink-muted); }
+
+html.view body { counter-reset: slideidx; }
+html.view section:after {
+counter-increment: slideidx;
+content: counter(slideidx, decimal-leading-zero);
+position: absolute; bottom: -80px; right: 100px;
+color: var(--ink-muted);
+}
+section { transition: left 300ms ease-out; }
+.view section { transition: none; }
+section { left: -150%; }
+section[aria-selected] { left: 0; }
+section[aria-selected] ~ section { left: +150%; }
+.incremental > * { opacity: 1; }
+.incremental > *[aria-selected] { opacity: 1; }
+.incremental > *[aria-selected] ~ * { opacity: 0; }
+</style>
+</head>
+<body>
+<section class="title">
+  <h1 class="title">La dérivation automatique de typeclasses en Scala
+3</h1>
+  <h1 class="subtitle">Construire une typeclass <code>Debuggable</code>
+et apprendre au compilateur à la dériver</h1>
+  <footer>
+    <span class="author">Benjamin Thuillier</span> · 
+  </footer>
+</section>
+<section id="qui-suis-je" class="slide level1">
+<h1>Qui suis-je ?</h1>
+<p>Benjamin Thuillier, Senior Software Engineer chez
+<strong>Conduktor</strong></p>
+<ul>
+<li>Une quinzaine d’années de Scala, souvent autour de Kafka</li>
+<li>Ad tech (Teads, TabMo), plateformes data (iAdvize, Talend),
+aujourd’hui gouvernance Kafka chez Conduktor</li>
+<li>J’écris sur la programmation fonctionnelle : gilwath.com</li>
+</ul>
+<div class="notes" role="note">
+<p>[0:30, ~45 s] Rester bref. Conduktor : produit de gouvernance autour
+de Kafka, en Scala.</p>
+</div>
+</section>
+<section id="au-programme" class="slide level1">
+<h1>Au programme</h1>
+<ol type="1">
+<li>C’est quoi une typeclass en Scala ?</li>
+<li>La typeclass <code>Debuggable</code> et ses instances de base</li>
+<li><code>derives</code> et <code>Mirror</code></li>
+<li><code>inline</code> : de la récursion qui tourne dans le
+compilateur</li>
+<li><code>summonFrom</code> : trouver une instance, ou la dériver</li>
+<li>Assembler <code>derived</code> : produits et sommes</li>
+<li>Bonus : un interpolateur <code>debug&quot;...&quot;</code></li>
+<li>Dans la vraie vie : Circe</li>
+</ol>
+<div class="notes" role="note">
+<p>[1:15, ~15 s]</p>
+</div>
+</section>
+<section id="cest-quoi-une-typeclass" class="slide level1">
+<h1>C’est quoi une typeclass ?</h1>
+<blockquote>
+<p>Une type class est un type abstrait et paramétré qui permet d’ajouter
+un nouveau comportement à n’importe quel type fermé sans passer par le
+sous-typage. Si vous venez de Java, pensez à
+<code>java.util.Comparator[T]</code>.</p>
+<p>(documentation Scala)</p>
+</blockquote>
+<ul>
+<li>Haskell : construction native du langage</li>
+<li>Scala : un <strong>pattern</strong> basé sur <code>trait</code> +
+instances <code>given</code></li>
+<li>Plus proche des <em>modular implicits</em> d’OCaml : les instances
+sont des valeurs qu’on passe (explicitement ou implicitement)</li>
+</ul>
+<div class="notes" role="note">
+<p>[1:30, ~1 min 30] Insister sur le fait qu’en Scala ce n’est pas une
+feature du langage, c’est un pattern.</p>
+</div>
+</section>
+<section id="à-quoi-ça-sert" class="slide level1">
+<h1>À quoi ça sert ?</h1>
+<ul>
+<li>Décrire comment un type <strong>qu’on ne possède pas</strong>
+(bibliothèque standard, lib tierce) se conforme à un comportement</li>
+<li>Donner un comportement à <strong>plusieurs types</strong> sans
+relation de sous-typage entre eux</li>
+</ul>
+<div class="notes" role="note">
+<p>[3:00, ~30 s]</p>
+</div>
+</section>
+<section id="dans-la-stdlib-ordering" class="slide level1">
+<h1>Dans la stdlib : <code>Ordering</code></h1>
+<div class="sourceCode" id="cb1"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// dans List : def sorted[B &gt;: A](implicit ord: Ordering[B]): List[A]</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">List</span><span class="op">(</span><span class="dv">3</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="dv">2</span><span class="op">).</span>sorted   <span class="co">// List(1, 2, 3), grâce au given Ordering[Int]</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="cf">case</span> <span class="kw">class</span> <span class="fu">Person</span><span class="op">(</span>name<span class="op">:</span> <span class="ex">String</span><span class="op">,</span> age<span class="op">:</span> <span class="bu">Int</span><span class="op">)</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">List</span><span class="op">(</span><span class="fu">Person</span><span class="op">(</span><span class="st">&quot;Alice&quot;</span><span class="op">,</span> <span class="dv">30</span><span class="op">),</span> <span class="fu">Person</span><span class="op">(</span><span class="st">&quot;Bob&quot;</span><span class="op">,</span> <span class="dv">25</span><span class="op">)).</span>sorted</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">// erreur : No given instance of type Ordering[B] was found</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>given Ordering<span class="op">[</span>Person<span class="op">]</span> <span class="op">=</span> Ordering<span class="op">.</span><span class="fu">by</span><span class="op">(</span>_<span class="op">.</span>age<span class="op">)</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ex">List</span><span class="op">(</span><span class="fu">Person</span><span class="op">(</span><span class="st">&quot;Alice&quot;</span><span class="op">,</span> <span class="dv">30</span><span class="op">),</span> <span class="fu">Person</span><span class="op">(</span><span class="st">&quot;Bob&quot;</span><span class="op">,</span> <span class="dv">25</span><span class="op">)).</span>sorted</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co">// List(Person(Bob,25), Person(Alice,30))</span></span></code></pre></div>
+<div class="notes" role="note">
+<p>[3:30, ~1 min 30] Ordering est la typeclass la plus connue de la
+stdlib, et elle étend justement java.util.Comparator (le lien avec la
+citation). <code>sorted</code> ne demande pas que Person hérite de quoi
+que ce soit : il demande une instance Ordering[Person]. Sans instance :
+erreur de compilation. On en fournit une avec un <code>given</code>, et
+<code>sorted</code> marche. Person ne sait toujours rien du tri.</p>
+</div>
+</section>
+<section id="dans-lécosystème-scala" class="slide level1">
+<h1>Dans l’écosystème Scala</h1>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Typeclass</th>
+<th>Bibliothèque</th>
+<th>Pour quoi faire</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Encoder[T]</code> / <code>Decoder[T]</code></td>
+<td>Circe</td>
+<td>Sérialiser / désérialiser en JSON</td>
+</tr>
+<tr>
+<td><code>Show[T]</code>, <code>Eq[T]</code></td>
+<td>Cats</td>
+<td>Affichage et égalité typés</td>
+</tr>
+<tr>
+<td><code>Functor[F]</code>, <code>Monad[F]</code></td>
+<td>Cats</td>
+<td>Abstraire sur <code>Option</code>, <code>List</code>,
+<code>IO</code>…</td>
+</tr>
+<tr>
+<td><code>Read[T]</code> / <code>Write[T]</code></td>
+<td>Doobie</td>
+<td>Lire / écrire une ligne SQL</td>
+</tr>
+</tbody>
+</table>
+<p>Point commun : les instances sont fournies par la lib ou dérivées,
+rarement écrites à la main.</p>
+<div class="notes" role="note">
+<p>[5:00, ~1 min] Circe : on y reviendra à la fin, c’est exactement la
+technique du talk. Cats : Show est très proche de notre Debuggable.
+Functor/Monad montrent qu’une typeclass peut aussi porter sur un
+constructeur de type F[_]. Doobie : les instances Read/Write pour une
+case class sont dérivées à partir de celles de ses colonnes. Transition
+: ici on a écrit l’instance à la main. Le reste du talk : la faire
+écrire par le compilateur.</p>
+</div>
+</section>
+<section id="notre-exemple" class="slide level1">
+<h1>Notre exemple</h1>
+<div class="sourceCode" id="cb2"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">case</span> <span class="kw">class</span> <span class="fu">Person</span><span class="op">(</span>name<span class="op">:</span> <span class="ex">String</span><span class="op">,</span> age<span class="op">:</span> <span class="bu">Int</span><span class="op">)</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>enum <span class="ex">Shape</span><span class="op">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="fu">Circle</span><span class="op">(</span>radius<span class="op">:</span> <span class="ex">Double</span><span class="op">)</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="ex">Rectangle</span><span class="op">(</span>width<span class="op">:</span> <span class="ex">Double</span><span class="op">,</span> height<span class="op">:</span> <span class="ex">Double</span><span class="op">)</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> Dot</span></code></pre></div>
+<p>On veut une méthode <code>debug</code> plutôt que le
+<code>.toString</code> par défaut :</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Person</span><span class="op">(</span><span class="st">&quot;Alice&quot;</span><span class="op">,</span> <span class="dv">30</span><span class="op">).</span>debug          <span class="co">// person{name=Alice, age=30}</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="op">(</span><span class="ex">Shape</span><span class="op">.</span><span class="fu">Circle</span><span class="op">(</span><span class="fl">1.5</span><span class="op">):</span> <span class="ex">Shape</span><span class="op">).</span>debug   <span class="co">// circle{radius=1.5}</span></span></code></pre></div>
+<div class="notes" role="note">
+<p>[6:00, ~1 min] Noter que le nom du type est en minuscules (Person
+devient person). On traitera ça plus tard.</p>
+</div>
+</section>
+<section id="lobjectif-ne-jamais-écrire-dinstance-à-la-main" class="slide level1">
+<h1>L’objectif : ne jamais écrire d’instance à la main</h1>
+<div class="sourceCode" id="cb4"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="cf">case</span> <span class="kw">class</span> <span class="fu">Person</span><span class="op">(</span>name<span class="op">:</span> <span class="ex">String</span><span class="op">,</span> age<span class="op">:</span> <span class="bu">Int</span><span class="op">)</span> derives Debuggable</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>enum <span class="ex">Shape</span> derives Debuggable<span class="op">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="fu">Circle</span><span class="op">(</span>radius<span class="op">:</span> <span class="ex">Double</span><span class="op">)</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="ex">Rectangle</span><span class="op">(</span>width<span class="op">:</span> <span class="ex">Double</span><span class="op">,</span> height<span class="op">:</span> <span class="ex">Double</span><span class="op">)</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> Dot</span></code></pre></div>
+<p>C’est ça, la <strong>dérivation automatique</strong>. Le reste du
+talk : apprendre au compilateur à le faire.</p>
+<div class="notes" role="note">
+<p>[7:00, ~30 s]</p>
+</div>
+</section>
+<section id="la-typeclass" class="slide level1">
+<h1>La typeclass</h1>
+<div class="sourceCode" id="cb5"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> Debuggable<span class="op">[</span>T<span class="op">]</span> <span class="op">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">extension</span> <span class="op">(</span>x<span class="op">:</span> T<span class="op">)</span> <span class="kw">def</span> debug<span class="op">:</span> <span class="ex">String</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<ul>
+<li><code>T</code> sera <code>Person</code>, <code>Shape</code>, …</li>
+<li>l’<code>extension</code> permet d’appeler <code>.debug</code>
+directement sur la valeur</li>
+</ul>
+<div class="notes" role="note">
+<p>[7:30, ~30 s]</p>
+</div>
+</section>
+<section id="les-instances-de-base" class="slide level1">
+<h1>Les instances de base</h1>
+<p>Pas de <code>Mirror</code> pour les primitives : on les écrit
+nous-mêmes.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>given Debuggable<span class="op">[</span><span class="bu">Int</span><span class="op">]</span> <span class="kw">with</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">extension</span> <span class="op">(</span>x<span class="op">:</span> <span class="bu">Int</span><span class="op">)</span> <span class="kw">def</span> debug<span class="op">:</span> <span class="ex">String</span> <span class="op">=</span> x<span class="op">.</span>toString</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>given Debuggable<span class="op">[</span><span class="ex">String</span><span class="op">]</span> <span class="kw">with</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">extension</span> <span class="op">(</span>x<span class="op">:</span> <span class="ex">String</span><span class="op">)</span> <span class="kw">def</span> debug<span class="op">:</span> <span class="ex">String</span> <span class="op">=</span> x</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">// ... Byte, Short, Long, Float, Double, BigInt, BigDecimal, UUID</span></span></code></pre></div>
+<div class="notes" role="note">
+<p>[8:00, ~45 s] Les primitives n’ont pas de Mirror, le compilateur ne
+peut donc rien dériver pour elles.</p>
+</div>
+</section>
+<section id="les-instances-conditionnelles" class="slide level1">
+<h1>Les instances conditionnelles</h1>
+<p>Une instance pour <code>List[T]</code> <strong>si</strong> il en
+existe une pour <code>T</code> :</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>given <span class="op">[</span>T<span class="op">](</span>using d<span class="op">:</span> Debuggable<span class="op">[</span>T<span class="op">]):</span> Debuggable<span class="op">[</span><span class="ex">List</span><span class="op">[</span>T<span class="op">]]</span> <span class="kw">with</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">extension</span> <span class="op">(</span>x<span class="op">:</span> <span class="ex">List</span><span class="op">[</span>T<span class="op">])</span> <span class="kw">def</span> debug<span class="op">:</span> <span class="ex">String</span> <span class="op">=</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    x<span class="op">.</span><span class="fu">map</span><span class="op">(</span>_<span class="op">.</span>debug<span class="op">).</span><span class="fu">mkString</span><span class="op">(</span><span class="st">&quot;[&quot;</span><span class="op">,</span> <span class="st">&quot;, &quot;</span><span class="op">,</span> <span class="st">&quot;]&quot;</span><span class="op">)</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>given <span class="op">[</span>T<span class="op">](</span>using d<span class="op">:</span> Debuggable<span class="op">[</span>T<span class="op">]):</span> Debuggable<span class="op">[</span><span class="ex">Option</span><span class="op">[</span>T<span class="op">]]</span> <span class="kw">with</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">extension</span> <span class="op">(</span>x<span class="op">:</span> <span class="ex">Option</span><span class="op">[</span>T<span class="op">])</span> <span class="kw">def</span> debug<span class="op">:</span> <span class="ex">String</span> <span class="op">=</span> x <span class="cf">match</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="bu">Some</span><span class="op">(</span>v<span class="op">)</span> <span class="op">=&gt;</span> <span class="ss">s&quot;${</span>v<span class="op">.</span>debug<span class="ss">}&quot;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="bu">None</span>    <span class="op">=&gt;</span> <span class="st">&quot;none&quot;</span></span></code></pre></div>
+<div class="notes" role="note">
+<p>[8:45, ~1 min] Attention : List et Option ont bien un Mirror (ce sont
+des sommes). Mais la version dérivée afficherait leur structure interne
+: some{value=1}, ::{head=1, next=…}. On écrit donc ces instances à la
+main, et comme summonFrom essaie d’abord les given existants, ce sont
+elles qui sont choisies. Map, elle, n’a pas de Mirror.</p>
+</div>
+</section>
+<section id="que-fait-derives" class="slide level1">
+<h1>Que fait <code>derives</code> ?</h1>
+<p><code>derives Debuggable</code> demande au compilateur d’appeler
+:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>inline <span class="kw">def</span> derived<span class="op">[</span>T<span class="op">](</span>using m<span class="op">:</span> Mirror<span class="op">.</span>Of<span class="op">[</span>T<span class="op">]):</span> Debuggable<span class="op">[</span>T<span class="op">]</span> <span class="op">=</span> <span class="op">???</span></span></code></pre></div>
+<p>Un <code>Mirror</code> décrit la <strong>forme</strong> d’un type
+:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Quoi</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Mirror.Product</code></td>
+<td>case class, object, cas d’enum</td>
+</tr>
+<tr>
+<td><code>Mirror.Sum</code></td>
+<td>sealed class / trait, enum</td>
+</tr>
+</tbody>
+</table>
+<div class="notes" role="note">
+<p>[9:45, ~1 min]</p>
+</div>
+</section>
+<section id="ce-que-le-mirror-nous-donne-pour-person" class="slide level1">
+<h1>Ce que le <code>Mirror</code> nous donne pour
+<code>Person</code></h1>
+<table>
+<thead>
+<tr>
+<th>Membre</th>
+<th>Valeur (au niveau des <strong>types</strong>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>m.MirroredElemTypes</code></td>
+<td><code>(String, Int)</code></td>
+</tr>
+<tr>
+<td><code>m.MirroredElemLabels</code></td>
+<td><code>(&quot;name&quot;, &quot;age&quot;)</code></td>
+</tr>
+<tr>
+<td><code>m.MirroredLabel</code></td>
+<td><code>&quot;Person&quot;</code></td>
+</tr>
+</tbody>
+</table>
+<p>Problème : ce sont des <strong>types</strong>, pas des valeurs.</p>
+<p>Il nous faut : une <code>List[Debuggable[?]]</code> et une
+<code>List[String]</code>.</p>
+<div class="notes" role="note">
+<p>[10:45, ~1 min 15] MirroredElemLabels est un tuple de types singleton
+string. Il faut faire le pont entre niveau type et niveau valeur, et on
+le fait à la compilation.</p>
+</div>
+</section>
+<section id="inline-de-la-récursion-dans-le-compilateur" class="slide level1">
+<h1><code>inline</code> : de la récursion dans le compilateur</h1>
+<ul>
+<li>Une <code>inline def</code> est <strong>expansée</strong> au site
+d’appel, pas appelée au runtime</li>
+<li><code>erasedValue[T]</code> : une fausse valeur de type
+<code>T</code>, jamais évaluée</li>
+<li><code>inline match</code> : le compilateur choisit la branche selon
+le type <strong>statique</strong></li>
+</ul>
+<div class="notes" role="note">
+<p>[12:00, ~45 s]</p>
+</div>
+</section>
+<section id="summonall-parcourir-un-tuple-de-types" class="slide level1">
+<h1><code>summonAll</code> : parcourir un tuple de types</h1>
+<div class="sourceCode" id="cb9"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>inline <span class="kw">def</span> summonAll<span class="op">[</span>T <span class="op">&lt;:</span> Tuple<span class="op">]:</span> <span class="ex">List</span><span class="op">[</span>Debuggable<span class="op">[?]]</span> <span class="op">=</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  inline erasedValue<span class="op">[</span>T<span class="op">]</span> <span class="cf">match</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> _<span class="op">:</span> EmptyTuple   <span class="op">=&gt;</span> Nil</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> _<span class="op">:</span> <span class="op">(</span>head <span class="op">*:</span> tail<span class="op">)</span> <span class="op">=&gt;</span> deriveOrSummon<span class="op">[</span>head<span class="op">]</span> <span class="op">::</span> summonAll<span class="op">[</span>tail<span class="op">]</span></span></code></pre></div>
+<p>Pour <code>(String, Int)</code>, à la compilation :</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>deriveOrSummon<span class="op">[</span><span class="ex">String</span><span class="op">]</span> <span class="op">::</span> deriveOrSummon<span class="op">[</span><span class="bu">Int</span><span class="op">]</span> <span class="op">::</span> Nil</span></code></pre></div>
+<div class="notes" role="note">
+<p>[12:45, ~1 min 30] Exactement comme parcourir une liste au runtime,
+sauf que la récursion a lieu pendant la compilation. Deux formes de
+tuple : EmptyTuple (cas de base) et head *: tail.</p>
+</div>
+</section>
+<section id="labelsof-des-types-singleton-aux-string" class="slide level1">
+<h1><code>labelsOf</code> : des types singleton aux
+<code>String</code></h1>
+<div class="sourceCode" id="cb11"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>inline <span class="kw">def</span> labelsOf<span class="op">[</span>T <span class="op">&lt;:</span> Tuple<span class="op">]:</span> <span class="ex">List</span><span class="op">[</span><span class="ex">String</span><span class="op">]</span> <span class="op">=</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  inline erasedValue<span class="op">[</span>T<span class="op">]</span> <span class="cf">match</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> _<span class="op">:</span> EmptyTuple   <span class="op">=&gt;</span> Nil</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> _<span class="op">:</span> <span class="op">(</span>head <span class="op">*:</span> tail<span class="op">)</span> <span class="op">=&gt;</span> constValue<span class="op">[</span>head<span class="op">].</span>asInstanceOf<span class="op">[</span><span class="ex">String</span><span class="op">]</span> <span class="op">::</span> labelsOf<span class="op">[</span>tail<span class="op">]</span></span></code></pre></div>
+<ul>
+<li><code>head</code> est un type singleton comme
+<code>&quot;name&quot;</code></li>
+<li><code>constValue[head]</code> le ramène à la valeur
+<code>&quot;name&quot;</code></li>
+<li>Résultat pour <code>Person</code> :
+<code>List(&quot;name&quot;, &quot;age&quot;)</code></li>
+</ul>
+<div class="notes" role="note">
+<p>[14:15, ~1 min]</p>
+</div>
+</section>
+<section id="summonfrom-trouver-ou-dériver" class="slide level1">
+<h1><code>summonFrom</code> : trouver ou dériver</h1>
+<div class="sourceCode" id="cb12"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>inline <span class="kw">def</span> deriveOrSummon<span class="op">[</span>T<span class="op">]:</span> Debuggable<span class="op">[</span>T<span class="op">]</span> <span class="op">=</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  scala<span class="op">.</span>compiletime<span class="op">.</span>summonFrom <span class="op">{</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> d<span class="op">:</span> Debuggable<span class="op">[</span>T<span class="op">]</span> <span class="op">=&gt;</span> d</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> m<span class="op">:</span> Mirror<span class="op">.</span>Of<span class="op">[</span>T<span class="op">]</span>  <span class="op">=&gt;</span> derived<span class="op">[</span>T<span class="op">](</span>using m<span class="op">)</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span></code></pre></div>
+<ol type="1">
+<li>Une instance existe ? On la prend.</li>
+<li>Sinon, <code>T</code> a un <code>Mirror</code> ? On la dérive.</li>
+</ol>
+<p>Dérivation <strong>récursive</strong> (un <code>Address</code> dans
+<code>Person</code>) et <strong>transparente</strong>.</p>
+<div class="notes" role="note">
+<p>[15:15, ~1 min 30] Pourquoi ne pas juste summon ? Parce que tous les
+types n’ont pas de given écrit à la main : un champ Address, ou les cas
+d’un enum, chacun est un produit pour lequel personne n’a écrit
+d’instance. summonFrom garde la première branche qui type-check. Types
+récursifs : cette version naïve ne les gère pas, mais en rendant
+l’évaluation des instances paresseuse (lazy), on supporterait la
+récursivité.</p>
+</div>
+</section>
+<section id="assembler-derived" class="slide level1">
+<h1>Assembler <code>derived</code></h1>
+<div class="sourceCode" id="cb13"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>inline <span class="kw">def</span> derived<span class="op">[</span>T<span class="op">](</span>using m<span class="op">:</span> Mirror<span class="op">.</span>Of<span class="op">[</span>T<span class="op">]):</span> Debuggable<span class="op">[</span>T<span class="op">]</span> <span class="op">=</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">val</span> instances <span class="op">=</span> summonAll<span class="op">[</span>m<span class="op">.</span>MirroredElemTypes<span class="op">]</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">val</span> labels    <span class="op">=</span> labelsOf<span class="op">[</span>m<span class="op">.</span>MirroredElemLabels<span class="op">]</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">val</span> typeName  <span class="op">=</span> constValue<span class="op">[</span>m<span class="op">.</span>MirroredLabel<span class="op">]</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  inline m <span class="cf">match</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> _<span class="op">:</span> Mirror<span class="op">.</span>ProductOf<span class="op">[</span>T<span class="op">]</span> <span class="op">=&gt;</span> <span class="fu">productDebuggable</span><span class="op">(</span>typeName<span class="op">,</span> labels<span class="op">,</span> instances<span class="op">)</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> s<span class="op">:</span> Mirror<span class="op">.</span>SumOf<span class="op">[</span>T<span class="op">]</span>     <span class="op">=&gt;</span> <span class="fu">sumDebuggable</span><span class="op">(</span>instances<span class="op">,</span> s<span class="op">)</span></span></code></pre></div>
+<p><code>inline match</code> : choix à la compilation, la branche
+inutile disparaît.</p>
+<div class="notes" role="note">
+<p>[16:45, ~1 min 15] Pas de test de type au runtime.</p>
+</div>
+</section>
+<section id="les-produits" class="slide level1">
+<h1>Les produits</h1>
+<div class="sourceCode" id="cb14"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">def</span> productDebuggable<span class="op">[</span>T<span class="op">](</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    typeName<span class="op">:</span> <span class="ex">String</span><span class="op">,</span> labels<span class="op">:</span> <span class="ex">List</span><span class="op">[</span><span class="ex">String</span><span class="op">],</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    instances<span class="op">:</span> <span class="ex">List</span><span class="op">[</span>Debuggable<span class="op">[?]]</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="op">):</span> Debuggable<span class="op">[</span>T<span class="op">]</span> <span class="op">=</span> <span class="kw">new</span> Debuggable<span class="op">[</span>T<span class="op">]</span> <span class="op">{</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">private</span> <span class="kw">val</span> prefix <span class="op">=</span> <span class="ss">s&quot;${</span><span class="fu">toSnakeCase</span><span class="op">(</span>typeName<span class="op">)</span><span class="ss">}</span><span class="st">{</span><span class="ss">&quot;</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">extension</span> <span class="op">(</span>x<span class="op">:</span> T<span class="op">)</span> <span class="kw">def</span> debug<span class="op">:</span> <span class="ex">String</span> <span class="op">=</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">val</span> fields <span class="op">=</span> x<span class="op">.</span>asInstanceOf<span class="op">[</span>Product<span class="op">].</span>productIterator<span class="op">.</span>toList</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">val</span> parts <span class="op">=</span> fields<span class="op">.</span><span class="fu">lazyZip</span><span class="op">(</span>instances<span class="op">).</span><span class="fu">lazyZip</span><span class="op">(</span>labels<span class="op">).</span>map <span class="op">{</span> <span class="op">(</span>value<span class="op">,</span> inst<span class="op">,</span> label<span class="op">)</span> <span class="op">=&gt;</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>      <span class="ss">s&quot;$label</span><span class="st">=</span><span class="ss">${</span>inst<span class="op">.</span>asInstanceOf<span class="op">[</span>Debuggable<span class="op">[</span><span class="ex">Any</span><span class="op">]].</span><span class="fu">debug</span><span class="op">(</span>value<span class="op">)</span><span class="ss">}&quot;</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    parts<span class="op">.</span><span class="fu">mkString</span><span class="op">(</span>prefix<span class="op">,</span> <span class="st">&quot;, &quot;</span><span class="op">,</span> <span class="st">&quot;}&quot;</span><span class="op">)</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="notes" role="note">
+<p>[18:00, ~1 min 30] Le préfixe est calculé une seule fois, à la
+construction de l’instance. instances et labels s’alignent par position
+avec les champs. productIterator donne les valeurs au runtime. Les
+asInstanceOf ont l’air dangereux mais ne le sont pas : summonAll a déjà
+vérifié à la compilation que chaque instance correspond au champ à la
+même position.</p>
+</div>
+</section>
+<section id="les-sommes" class="slide level1">
+<h1>Les sommes</h1>
+<div class="sourceCode" id="cb15"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">def</span> sumDebuggable<span class="op">[</span>T<span class="op">](</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    instances<span class="op">:</span> <span class="ex">List</span><span class="op">[</span>Debuggable<span class="op">[?]],</span> s<span class="op">:</span> Mirror<span class="op">.</span>SumOf<span class="op">[</span>T<span class="op">]</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="op">):</span> Debuggable<span class="op">[</span>T<span class="op">]</span> <span class="op">=</span> <span class="kw">new</span> Debuggable<span class="op">[</span>T<span class="op">]</span> <span class="op">{</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">private</span> <span class="kw">val</span> byOrdinal <span class="op">=</span> instances<span class="op">.</span>toVector</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">extension</span> <span class="op">(</span>x<span class="op">:</span> T<span class="op">)</span> <span class="kw">def</span> debug<span class="op">:</span> <span class="ex">String</span> <span class="op">=</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">val</span> ord <span class="op">=</span> s<span class="op">.</span><span class="fu">ordinal</span><span class="op">(</span>x<span class="op">)</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">byOrdinal</span><span class="op">(</span>ord<span class="op">).</span>asInstanceOf<span class="op">[</span>Debuggable<span class="op">[</span><span class="ex">Any</span><span class="op">]].</span><span class="fu">debug</span><span class="op">(</span>x<span class="op">)</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<ul>
+<li><code>ordinal(x)</code> : quel cas est <code>x</code></li>
+<li>Aucune logique d’affichage : on délègue à l’instance du cas
+(elle-même un <strong>produit</strong> dérivé)</li>
+</ul>
+<div class="notes" role="note">
+<p>[19:30, ~1 min] Vector pour un accès en temps constant par ordinal
+(une List serait parcourue à chaque appel). Un Shape EST un Circle, un
+Rectangle ou un Dot. C’est la récursion de deriveOrSummon qui paie.</p>
+</div>
+</section>
+<section id="détour-cosmétique-snake_case" class="slide level1">
+<h1>Détour cosmétique : snake_case</h1>
+<p><code>Person</code> → <code>person</code>, <code>HTTPServer</code> →
+<code>http_server</code></p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="kw">def</span> <span class="fu">toSnakeCase</span><span class="op">(</span>name<span class="op">:</span> <span class="ex">String</span><span class="op">):</span> <span class="ex">String</span> <span class="op">=</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="ss">s&quot;</span><span class="st"> </span><span class="ss">$name</span><span class="st"> </span><span class="ss">&quot;</span><span class="op">.</span><span class="fu">sliding</span><span class="op">(</span><span class="dv">3</span><span class="op">).</span>flatMap <span class="op">{</span> window <span class="op">=&gt;</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">val</span> prev <span class="op">=</span> window<span class="op">.</span><span class="fu">charAt</span><span class="op">(</span><span class="dv">0</span><span class="op">);</span> <span class="kw">val</span> c <span class="op">=</span> window<span class="op">.</span><span class="fu">charAt</span><span class="op">(</span><span class="dv">1</span><span class="op">);</span> <span class="kw">val</span> next <span class="op">=</span> window<span class="op">.</span><span class="fu">charAt</span><span class="op">(</span><span class="dv">2</span><span class="op">)</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">val</span> boundary <span class="op">=</span> c<span class="op">.</span>isUpper <span class="op">&amp;&amp;</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">(</span>prev<span class="op">.</span>isLower <span class="op">||</span> prev<span class="op">.</span>isDigit <span class="op">||</span> <span class="op">(</span>prev<span class="op">.</span>isUpper <span class="op">&amp;&amp;</span> next<span class="op">.</span>isLower<span class="op">))</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span><span class="cf">if</span> boundary then <span class="st">&quot;_&quot;</span> <span class="cf">else</span> <span class="st">&quot;&quot;</span><span class="op">)</span> <span class="op">+</span> c<span class="op">.</span>toLower</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">}.</span>mkString</span></code></pre></div>
+<div class="notes" role="note">
+<p>[20:30, ~30 s] Passer vite, ce n’est pas le sujet.</p>
+</div>
+</section>
+<section id="bonus-un-interpolateur-debug..." class="slide level1">
+<h1>Bonus : un interpolateur <code>debug&quot;...&quot;</code></h1>
+<div class="sourceCode" id="cb17"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="cf">case</span> <span class="kw">class</span> <span class="fu">DebugArg</span><span class="op">(</span>rendered<span class="op">:</span> <span class="ex">String</span><span class="op">)</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="kw">object</span> DebugArg<span class="op">:</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  given convert<span class="op">[</span>T<span class="op">](</span>using d<span class="op">:</span> Debuggable<span class="op">[</span>T<span class="op">]):</span> Conversion<span class="op">[</span>T<span class="op">,</span> DebugArg<span class="op">]</span> <span class="kw">with</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">apply</span><span class="op">(</span>x<span class="op">:</span> T<span class="op">):</span> DebugArg <span class="op">=</span> <span class="fu">DebugArg</span><span class="op">(</span>x<span class="op">.</span>debug<span class="op">)</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="fu">extension</span> <span class="op">(</span>sc<span class="op">:</span> StringContext<span class="op">)</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> <span class="fu">debug</span><span class="op">(</span>args<span class="op">:</span> DebugArg<span class="op">*):</span> <span class="bu">Unit</span> <span class="op">=</span> <span class="fu">println</span><span class="op">(</span>sc<span class="op">.</span><span class="fu">s</span><span class="op">(</span>args<span class="op">.</span><span class="fu">map</span><span class="op">(</span>_<span class="op">.</span>rendered<span class="op">)*))</span></span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode scala"><code class="sourceCode scala"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> scala<span class="op">.</span>language<span class="op">.</span>implicitConversions</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>debug<span class="st">&quot;user=$alice, shape=$shape&quot;</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="co">// affiche : user=person{name=Alice, age=30}, shape=circle{radius=1.5}</span></span></code></pre></div>
+<div class="notes" role="note">
+<p>[21:00, ~1 min 30] Un interpolateur = une extension sur
+StringContext. Les interpolateurs standards appellent toString, donc on
+pré-rend chaque argument via Debuggable. L’interpolateur fait
+directement le println : pas besoin d’écrire println(debug”…“). Pas
+d’instance Debuggable[T] : erreur de compilation directement sur le $arg
+fautif.</p>
+</div>
+</section>
+<section id="démo" class="slide level1">
+<h1>Démo</h1>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">scala</span> https://gist.github.com/bthuillier/4f65135b17bd41f41adcb862ef6fd223</span></code></pre></div>
+<div class="notes" role="note">
+<p>[22:30, ~2 min 30] Montrer : Person, Shape, un champ imbriqué
+(Address), puis retirer une instance pour montrer l’erreur de
+compilation.</p>
+</div>
+</section>
+<section id="dans-la-vraie-vie-circe" class="slide level1">
+<h1>Dans la vraie vie : Circe</h1>
+<p>C’est exactement la technique de <strong>Circe</strong> pour dériver
+les encoders / decoders JSON.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Nous</th>
+<th>Circe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>labelsOf</code></td>
+<td><code>summonLabels</code></td>
+</tr>
+<tr>
+<td><code>summonAll</code></td>
+<td><code>summonEncoders</code> / <code>summonDecoders</code></td>
+</tr>
+<tr>
+<td><code>deriveOrSummon</code></td>
+<td><code>summonEncoder</code> / <code>summonDecoder</code></td>
+</tr>
+<tr>
+<td><code>inline match</code> sur <code>Mirror</code></td>
+<td>dispatch <code>Mirror.SumOf</code> /
+<code>Mirror.ProductOf</code></td>
+</tr>
+</tbody>
+</table>
+<p>Même <code>Mirror</code>, même récursion, type de sortie différent
+(<code>String</code> vs AST JSON).</p>
+<div class="notes" role="note">
+<p>[25:00, ~1 min] Source :
+modules/core/shared/src/main/scala-3/io/circe/derivation/package.scala</p>
+</div>
+</section>
+<section id="à-retenir" class="slide level1">
+<h1>À retenir</h1>
+<ul>
+<li><strong><code>Mirror</code></strong> : la forme d’un type à la
+compilation (labels, types, nom ; produit ou somme)</li>
+<li><strong><code>inline</code></strong> (<code>erasedValue</code>,
+<code>constValue</code>, <code>inline match</code>) : pont entre niveau
+type et niveau valeur</li>
+<li><strong><code>summonFrom</code></strong> : rend la dérivation
+récursive</li>
+</ul>
+<p>La dérivation automatique en Scala 3, ce n’est pas de la magie :
+c’est du code ordinaire qui s’exécute à la compilation.</p>
+<div class="notes" role="note">
+<p>[26:00, ~1 min]</p>
+</div>
+</section>
+<section id="merci-questions" class="slide level1">
+<h1>Merci ! Questions ?</h1>
+<ul>
+<li>Article : <em>Automatic Typeclass Derivation in Scala 3</em></li>
+<li>Code :
+gist.github.com/bthuillier/4f65135b17bd41f41adcb862ef6fd223</li>
+</ul>
+<div class="notes" role="note">
+<p>[27:00, ~3 min de questions]</p>
+</div>
+<!--
+Rendu :
+pandoc derivation_automatique.md -t dzslides -s --embed-resources --css slides.css -o derivation_automatique.html
+
+Notes du slide titre :
+[0:00, ~30 s]
+Se présenter. Annoncer le fil rouge : on part d'un trait vide et on finit avec `derives Debuggable` sur n'importe quelle case class ou enum.
+-->
+</section>
+<!-- {{{{ dzslides core
+#
+#
+#     __  __  __       .  __   ___  __
+#    |  \  / /__` |    | |  \ |__  /__`
+#    |__/ /_ .__/ |___ | |__/ |___ .__/ core :€
+#
+#
+# The following block of code is not supposed to be edited.
+# But if you want to change the behavior of these slides,
+# feel free to hack it!
+#
+-->
+
+<div id="progress-bar"></div>
+
+<!-- Default Style -->
+<style>
+* { margin: 0; padding: 0; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }
+[role="note"] { display: none; }
+body {
+width: 800px; height: 600px;
+margin-left: -400px; margin-top: -300px;
+position: absolute; top: 50%; left: 50%;
+overflow: hidden;
+display: none;
+}
+.view body {
+position: static;
+margin: 0; padding: 0;
+width: 100%; height: 100%;
+display: inline-block;
+overflow: visible; overflow-x: hidden;
+
+transform: none !important;
+-moz-transform: none !important;
+-webkit-transform: none !important;
+-o-transform: none !important;
+-ms-transform: none !important;
+}
+.view head, .view head > title { display: block }
+section {
+position: absolute;
+pointer-events: none;
+width: 100%; height: 100%;
+}
+.view section {
+pointer-events: auto;
+position: static;
+width: 800px; height: 600px;
+margin: -150px -200px;
+float: left;
+transform: scale(.4);
+-moz-transform: scale(.4);
+-webkit-transform: scale(.4);
+-o-transform: scale(.4);
+-ms-transform: scale(.4);
+}
+.view section > * { pointer-events: none; }
+section[aria-selected] { pointer-events: auto; }
+html { overflow: hidden; }
+html.view { overflow: visible; }
+body.loaded { display: block; }
+.incremental {visibility: hidden; }
+.incremental[active] {visibility: visible; }
+#progress-bar{
+bottom: 0;
+position: absolute;
+-moz-transition: width 400ms linear 0s;
+-webkit-transition: width 400ms linear 0s;
+-ms-transition: width 400ms linear 0s;
+transition: width 400ms linear 0s;
+}
+.view #progress-bar {
+display: none;
+}
+</style>
+
+<script>
+  var Dz = {
+    remoteWindows: [],
+    idx: -1,
+    step: 0,
+    html: null,
+    slides: null,
+    progressBar : null,
+    params: {
+      autoplay: "1"
+    }
+  };
+
+  Dz.init = function() {
+    document.body.className = "loaded";
+    this.slides = Array.prototype.slice.call($$("body > section"));
+    this.progressBar = $("#progress-bar");
+    this.html = document.body.parentNode;
+    this.setupParams();
+    this.onhashchange();
+    this.setupTouchEvents();
+    this.onresize();
+    this.setupView();
+  }
+
+  Dz.setupParams = function() {
+    var p = window.location.search.substr(1).split('&');
+    p.forEach(function(e, i, a) {
+      var keyVal = e.split('=');
+      Dz.params[keyVal[0]] = decodeURIComponent(keyVal[1]);
+    });
+  // Specific params handling
+    if (!+this.params.autoplay)
+      $$.forEach($$("video"), function(v){ v.controls = true });
+  }
+
+  Dz.onkeydown = function(aEvent) {
+    // Don't intercept keyboard shortcuts
+    if (aEvent.altKey
+      || aEvent.ctrlKey
+      || aEvent.metaKey
+      || aEvent.shiftKey) {
+      return;
+    }
+    if ( aEvent.keyCode == 37 // left arrow
+      || aEvent.keyCode == 38 // up arrow
+      || aEvent.keyCode == 33 // page up
+    ) {
+      aEvent.preventDefault();
+      this.back();
+    }
+    if ( aEvent.keyCode == 39 // right arrow
+      || aEvent.keyCode == 40 // down arrow
+      || aEvent.keyCode == 34 // page down
+    ) {
+      aEvent.preventDefault();
+      this.forward();
+    }
+    if (aEvent.keyCode == 35) { // end
+      aEvent.preventDefault();
+      this.goEnd();
+    }
+    if (aEvent.keyCode == 36) { // home
+      aEvent.preventDefault();
+      this.goStart();
+    }
+    if (aEvent.keyCode == 32) { // space
+      aEvent.preventDefault();
+      this.toggleContent();
+    }
+    if (aEvent.keyCode == 70) { // f
+      aEvent.preventDefault();
+      this.goFullscreen();
+    }
+    if (aEvent.keyCode == 79) { // o
+      aEvent.preventDefault();
+      this.toggleView();
+    }
+  }
+
+  /* Touch Events */
+
+  Dz.setupTouchEvents = function() {
+    var orgX, newX;
+    var tracking = false;
+
+    var db = document.body;
+    db.addEventListener("touchstart", start.bind(this), false);
+    db.addEventListener("touchmove", move.bind(this), false);
+
+    function start(aEvent) {
+      aEvent.preventDefault();
+      tracking = true;
+      orgX = aEvent.changedTouches[0].pageX;
+    }
+
+    function move(aEvent) {
+      if (!tracking) return;
+      newX = aEvent.changedTouches[0].pageX;
+      if (orgX - newX > 100) {
+        tracking = false;
+        this.forward();
+      } else {
+        if (orgX - newX < -100) {
+          tracking = false;
+          this.back();
+        }
+      }
+    }
+  }
+
+  Dz.setupView = function() {
+    document.body.addEventListener("click", function ( e ) {
+      if (!Dz.html.classList.contains("view")) return;
+      if (!e.target || e.target.nodeName != "SECTION") return;
+
+      Dz.html.classList.remove("view");
+      Dz.setCursor(Dz.slides.indexOf(e.target) + 1);
+    }, false);
+  }
+
+  /* Adapt the size of the slides to the window */
+
+  Dz.onresize = function() {
+    var db = document.body;
+    var sx = db.clientWidth / window.innerWidth;
+    var sy = db.clientHeight / window.innerHeight;
+    var transform = "scale(" + (1/Math.max(sx, sy)) + ")";
+
+    db.style.MozTransform = transform;
+    db.style.WebkitTransform = transform;
+    db.style.OTransform = transform;
+    db.style.msTransform = transform;
+    db.style.transform = transform;
+  }
+
+
+  Dz.getNotes = function(aIdx) {
+    var s = $("section:nth-of-type(" + aIdx + ")");
+    var d = s.$("[role='note']");
+    return d ? d.innerHTML : "";
+  }
+
+  Dz.onmessage = function(aEvent) {
+    var argv = aEvent.data.split(" "), argc = argv.length;
+    argv.forEach(function(e, i, a) { a[i] = decodeURIComponent(e) });
+    var win = aEvent.source;
+    if (argv[0] === "REGISTER" && argc === 1) {
+      this.remoteWindows.push(win);
+      this.postMsg(win, "REGISTERED", document.title, this.slides.length);
+      this.postMsg(win, "CURSOR", this.idx + "." + this.step);
+      return;
+    }
+    if (argv[0] === "BACK" && argc === 1)
+      this.back();
+    if (argv[0] === "FORWARD" && argc === 1)
+      this.forward();
+    if (argv[0] === "START" && argc === 1)
+      this.goStart();
+    if (argv[0] === "END" && argc === 1)
+      this.goEnd();
+    if (argv[0] === "TOGGLE_CONTENT" && argc === 1)
+      this.toggleContent();
+    if (argv[0] === "SET_CURSOR" && argc === 2)
+      window.location.hash = "#" + argv[1];
+    if (argv[0] === "GET_CURSOR" && argc === 1)
+      this.postMsg(win, "CURSOR", this.idx + "." + this.step);
+    if (argv[0] === "GET_NOTES" && argc === 1)
+      this.postMsg(win, "NOTES", this.getNotes(this.idx));
+  }
+
+  Dz.toggleContent = function() {
+    // If a Video is present in this new slide, play it.
+    // If a Video is present in the previous slide, stop it.
+    var s = $("section[aria-selected]");
+    if (s) {
+      var video = s.$("video");
+      if (video) {
+        if (video.ended || video.paused) {
+          video.play();
+        } else {
+          video.pause();
+        }
+      }
+    }
+  }
+
+  Dz.setCursor = function(aIdx, aStep) {
+    // If the user change the slide number in the URL bar, jump
+    // to this slide.
+    aStep = (aStep != 0 && typeof aStep !== "undefined") ? "." + aStep : ".0";
+    window.location.hash = "#" + aIdx + aStep;
+  }
+
+  Dz.onhashchange = function() {
+    var cursor = window.location.hash.split("#"),
+        newidx = 1,
+        newstep = 0;
+    if (cursor.length == 2) {
+      newidx = ~~cursor[1].split(".")[0];
+      newstep = ~~cursor[1].split(".")[1];
+      if (newstep > Dz.slides[newidx - 1].$$('.incremental > *').length) {
+        newstep = 0;
+        newidx++;
+      }
+    }
+    this.setProgress(newidx, newstep);
+    if (newidx != this.idx) {
+      this.setSlide(newidx);
+    }
+    if (newstep != this.step) {
+      this.setIncremental(newstep);
+    }
+    for (var i = 0; i < this.remoteWindows.length; i++) {
+      this.postMsg(this.remoteWindows[i], "CURSOR", this.idx + "." + this.step);
+    }
+  }
+
+  Dz.back = function() {
+    if (this.idx == 1 && this.step == 0) {
+      return;
+    }
+    if (this.step == 0) {
+      this.setCursor(this.idx - 1,
+                     this.slides[this.idx - 2].$$('.incremental > *').length);
+    } else {
+      this.setCursor(this.idx, this.step - 1);
+    }
+  }
+
+  Dz.forward = function() {
+    if (this.idx >= this.slides.length &&
+        this.step >= this.slides[this.idx - 1].$$('.incremental > *').length) {
+        return;
+    }
+    if (this.step >= this.slides[this.idx - 1].$$('.incremental > *').length) {
+      this.setCursor(this.idx + 1, 0);
+    } else {
+      this.setCursor(this.idx, this.step + 1);
+    }
+  }
+
+  Dz.goStart = function() {
+    this.setCursor(1, 0);
+  }
+
+  Dz.goEnd = function() {
+    var lastIdx = this.slides.length;
+    var lastStep = this.slides[lastIdx - 1].$$('.incremental > *').length;
+    this.setCursor(lastIdx, lastStep);
+  }
+
+  Dz.toggleView = function() {
+    this.html.classList.toggle("view");
+
+    if (this.html.classList.contains("view")) {
+      $("section[aria-selected]").scrollIntoView(true);
+    }
+  }
+
+  Dz.setSlide = function(aIdx) {
+    this.idx = aIdx;
+    var old = $("section[aria-selected]");
+    var next = $("section:nth-of-type("+ this.idx +")");
+    if (old) {
+      old.removeAttribute("aria-selected");
+      var video = old.$("video");
+      if (video) {
+        video.pause();
+      }
+    }
+    if (next) {
+      next.setAttribute("aria-selected", "true");
+      if (this.html.classList.contains("view")) {
+        next.scrollIntoView();
+      }
+      var video = next.$("video");
+      if (video && !!+this.params.autoplay) {
+        video.play();
+      }
+    } else {
+      // That should not happen
+      this.idx = -1;
+      // console.warn("Slide doesn't exist.");
+    }
+  }
+
+  Dz.setIncremental = function(aStep) {
+    this.step = aStep;
+    var old = this.slides[this.idx - 1].$('.incremental > *[aria-selected]');
+    if (old) {
+      old.removeAttribute('aria-selected');
+    }
+    var incrementals = $$('.incremental');
+    if (this.step <= 0) {
+      $$.forEach(incrementals, function(aNode) {
+        aNode.removeAttribute('active');
+      });
+      return;
+    }
+    var next = this.slides[this.idx - 1].$$('.incremental > *')[this.step - 1];
+    if (next) {
+      next.setAttribute('aria-selected', true);
+      next.parentNode.setAttribute('active', true);
+      var found = false;
+      $$.forEach(incrementals, function(aNode) {
+        if (aNode != next.parentNode)
+          if (found)
+            aNode.removeAttribute('active');
+          else
+            aNode.setAttribute('active', true);
+        else
+          found = true;
+      });
+    } else {
+      setCursor(this.idx, 0);
+    }
+    return next;
+  }
+
+  Dz.goFullscreen = function() {
+    var html = $('html'),
+        requestFullscreen = html.requestFullscreen || html.requestFullScreen || html.mozRequestFullScreen || html.webkitRequestFullScreen;
+    if (requestFullscreen) {
+      requestFullscreen.apply(html);
+    }
+  }
+  
+  Dz.setProgress = function(aIdx, aStep) {
+    var slide = $("section:nth-of-type("+ aIdx +")");
+    if (!slide)
+      return;
+    var steps = slide.$$('.incremental > *').length + 1,
+        slideSize = 100 / (this.slides.length - 1),
+        stepSize = slideSize / steps;
+    this.progressBar.style.width = ((aIdx - 1) * slideSize + aStep * stepSize) + '%';
+  }
+  
+  Dz.postMsg = function(aWin, aMsg) { // [arg0, [arg1...]]
+    aMsg = [aMsg];
+    for (var i = 2; i < arguments.length; i++)
+      aMsg.push(encodeURIComponent(arguments[i]));
+    aWin.postMessage(aMsg.join(" "), "*");
+  }
+  
+  function init() {
+    Dz.init();
+    window.onkeydown = Dz.onkeydown.bind(Dz);
+    window.onresize = Dz.onresize.bind(Dz);
+    window.onhashchange = Dz.onhashchange.bind(Dz);
+    window.onmessage = Dz.onmessage.bind(Dz);
+  }
+
+  window.onload = init;
+</script>
+
+
+<script> // Helpers
+  if (!Function.prototype.bind) {
+    Function.prototype.bind = function (oThis) {
+
+      // closest thing possible to the ECMAScript 5 internal IsCallable
+      // function 
+      if (typeof this !== "function")
+      throw new TypeError(
+        "Function.prototype.bind - what is trying to be fBound is not callable"
+      );
+
+      var aArgs = Array.prototype.slice.call(arguments, 1),
+          fToBind = this,
+          fNOP = function () {},
+          fBound = function () {
+            return fToBind.apply( this instanceof fNOP ? this : oThis || window,
+                   aArgs.concat(Array.prototype.slice.call(arguments)));
+          };
+
+      fNOP.prototype = this.prototype;
+      fBound.prototype = new fNOP();
+
+      return fBound;
+    };
+  }
+
+  var $ = (HTMLElement.prototype.$ = function(aQuery) {
+    return this.querySelector(aQuery);
+  }).bind(document);
+
+  var $$ = (HTMLElement.prototype.$$ = function(aQuery) {
+    return this.querySelectorAll(aQuery);
+  }).bind(document);
+
+  $$.forEach = function(nodeList, fun) {
+    Array.prototype.forEach.call(nodeList, fun);
+  }
+
+</script>
+<!-- vim: set fdm=marker: }}} -->
+</body>
+</html>
