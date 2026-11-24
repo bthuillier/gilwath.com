@@ -432,11 +432,13 @@ Pas de magie : du code ordinaire, exécuté à la compilation.
 :::
 
 <!--
-Rendu reveal.js :
-pandoc derivation_automatique.md -t revealjs -s --embed-resources --css reveal.css -V theme=white -V width=1280 -V height=720 -V margin=0 -V center=false -V transition=none -V slideNumber=true -V hash=true -V controls=false -o derivation_automatique.html
+Rendu reveal.js (un fichier daté par version présentée, publié sur le blog
+sous /talks/derivation_automatique/<date>.html ; ne pas écraser une version
+déjà présentée, en créer une nouvelle) :
+pandoc derivation_automatique.md -t revealjs -s --embed-resources --css reveal.css -V theme=white -V width=1280 -V height=720 -V margin=0 -V center=false -V transition=none -V slideNumber=true -V hash=true -V controls=false -o 2026-11-19.html
 
 Présenter (touche s : vue présentateur avec notes et chrono) :
-open -a "Google Chrome" derivation_automatique.html
+open -a "Google Chrome" 2026-11-19.html
 
 PDF des notes (secours) :
 pandoc derivation_automatique.md -s --embed-resources --css notes.css -o /tmp/notes.html

@@ -4,14 +4,34 @@
   {{safe (yocaml_body) }}
 </section>
 
-{% if has_articles %}
-<p class="section-label">Recently</p>
-<ul class="post-list">
-  {% for article in articles %}
-  <li>
-    <time datetime="{{ article.date.repr.date }}">{{ printf("%02d.%02d.%d", article.date.day, article.date.month, article.date.year) }}</time>
-    <a href="{{ article.url }}">{{ article.title }}</a>
-  </li>
-  {% endfor %}
-</ul>
-{% endif %}
+<div class="home-columns">
+  {% if has_articles %}
+  <section>
+    <p class="section-label">Recently</p>
+    <ul class="post-list compact-list">
+      {% for article in articles %}{% if loop.index <= 5 %}
+      <li>
+        <time datetime="{{ article.date.repr.date }}">{{ printf("%02d.%02d.%d", article.date.day, article.date.month, article.date.year) }}</time>
+        <a href="{{ article.url }}">{{ article.title }}</a>
+      </li>
+      {% endif %}{% endfor %}
+    </ul>
+    <p class="more-link"><a href="/blog.html">All articles →</a></p>
+  </section>
+  {% endif %}
+
+  {% if has_talks %}
+  <section>
+    <p class="section-label">Talks</p>
+    <ul class="post-list compact-list">
+      {% for talk in talks %}{% if loop.index <= 2 %}
+      <li>
+        <time datetime="{{ talk.date.repr.date }}">{{ printf("%02d.%02d.%d", talk.date.day, talk.date.month, talk.date.year) }}</time>
+        <a href="{{ talk.url }}">{{ talk.title }}</a>
+      </li>
+      {% endif %}{% endfor %}
+    </ul>
+    <p class="more-link"><a href="/talks.html">All talks →</a></p>
+  </section>
+  {% endif %}
+</div>

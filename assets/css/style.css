@@ -552,6 +552,29 @@ pre code .shell-source { color: var(--ink); }
 }
 .post-list a:hover { text-decoration: underline; text-underline-offset: .2em; }
 
+/* Talks: the description sits under the title, in the second column. */
+.talk-list li { row-gap: .15rem; }
+.talk-list .talk-description {
+  grid-column: 2;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: .9rem;
+}
+.talk-list .talk-description a { color: inherit; text-decoration: underline; text-underline-offset: .2em; }
+
+/* Home: recent articles and talks side by side, stacked on mobile.
+   In these narrow columns the date sits above the title. */
+.home-columns {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: var(--s-5);
+  align-items: start;
+}
+.compact-list li { grid-template-columns: 1fr; gap: .15rem; }
+.more-link { margin: var(--s-2) 0 0; font-size: .9rem; }
+.more-link a { color: var(--ink-muted); text-decoration: none; }
+.more-link a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: .2em; }
+
 .year-heading {
   font-family: var(--font-sans);
   text-transform: uppercase;
@@ -672,6 +695,8 @@ pre code .shell-source { color: var(--ink); }
 @media (max-width: 600px) {
   .cv-entry { grid-template-columns: 1fr; gap: .25rem; }
   .post-list li { grid-template-columns: 1fr; gap: .15rem; }
+  .talk-list .talk-description { grid-column: 1; }
+  .home-columns { grid-template-columns: 1fr; gap: 0; }
 }
 
 /* ---------- Footer -------------------------------------------- */

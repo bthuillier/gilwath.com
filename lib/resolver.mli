@@ -24,6 +24,8 @@ module Source : sig
   val article_template : t -> Path.t
   val index_template : t -> Path.t
   val blog_template : t -> Path.t
+  val talks_template : t -> Path.t
+  val talk_template : t -> Path.t
   val cv_template : t -> Path.t
   val og_article_template : t -> Path.t
 
@@ -33,8 +35,11 @@ module Source : sig
   val articles : t -> Path.t
   val experiences : t -> Path.t
   val education : t -> Path.t
+  val talks : t -> Path.t
+  val talk_files : t -> Path.t
   val index : t -> Path.t
   val blog : t -> Path.t
+  val talks_page : t -> Path.t
   val cv : t -> Path.t
   val site : t -> Path.t
 end
@@ -49,6 +54,9 @@ module Target : sig
   val article_og_png : t -> Path.t -> Path.t
   val article_og_url : Path.t -> string
   val article_url : Path.t -> string
+  val talks : t -> Path.t
+  val talk : t -> Path.t -> Path.t
+  val talk_url : Path.t -> string
   val style_css : t -> Path.t
   val page : t -> Path.t -> Path.t
   val article : t -> Path.t -> Path.t

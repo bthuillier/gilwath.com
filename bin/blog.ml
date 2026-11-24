@@ -30,6 +30,7 @@ module Cv = Blog_core.Cv
 module Reading_time = Blog_core.Reading_time
 module Resolver = Blog_core.Resolver
 module Markdown = Blog_core.Markdown
+module Talk = Blog_core.Talk
 
 module Feed = struct
   let owner site =
@@ -174,6 +175,45 @@ let fetch_education resolver =
     (Resolver.Source.education resolver)
 ;;
 
+(* Talks only carry front matter; the (empty) body is dropped. *)
+(* (source path * Talk.t) list, sorted most-recent-first. *)
+let fetch_talks resolver =
+  let open Task in
+  Pipeline.fetch
+    ~only:`Files
+    ~where:is_markdown
+    ~on:`Source
+    (fun file ->
+       let open Eff in
+       let+ talk, _body =
+         Eff.read_file_with_metadata
+           (module Yocaml_yaml)
+           (module Talk)
+           ~on:`Source
+           file
+       in
+       file, talk)
+    (Resolver.Source.talks resolver)
+  >>| List.sort (fun (_, a) (_, b) ->
+    ~-(Archetype.Datetime.compare (Talk.date a) (Talk.date b)))
+;;
+
+(* A talk as listed on the home and talks pages: its fields plus the URL
+   of its own page. *)
+let talk_entry (source, talk) =
+  Data.record
+    (("url", Data.string (Resolver.Target.talk_url source))
+     :: Talk.normalize talk)
+;;
+
+(* Extra template fields for the home page: [talks] and [has_talks]. *)
+let talks_fields resolver =
+  let open Task in
+  fetch_talks resolver
+  >>| fun talks ->
+  Data.[ "talks", list_of talk_entry talks; "has_talks", bool (talks <> []) ]
+;;
+
 let document_sources resolver = function
   | Page -> Resolver.Source.pages resolver
   | Article -> Resolver.Source.articles resolver
@@ -287,6 +327,7 @@ let create_listing
       ~source
       ~into:dest_dir
       ~templates:template_chain
+      ~extra
   =
   let listing_path =
     source |> Path.move ~into:dest_dir |> Path.change_extension "html"
@@ -296,13 +337,16 @@ let create_listing
     let+ () = track_deps resolver
     and+ templates = Yocaml_jingoo.read_templates template_chain
     and+ articles = fetch_articles resolver
+    and+ extra
     and+ metadata, content =
       Yocaml_yaml.Pipeline.read_file_with_metadata
         (module Archetype.Page)
         source
     in
     let listing = Archetype.Articles.with_page ~page:metadata ~articles in
-    let fields = inject_site site (Archetype.Articles.normalize listing) in
+    let fields =
+      inject_site site (extra @ Archetype.Articles.normalize listing)
+    in
     render_through templates fields content
   in
   Action.Static.write_file listing_path pipeline
@@ -314,6 +358,7 @@ let create_index resolver ~site =
     ~site
     ~source:(Resolver.Source.index resolver)
     ~into:(Resolver.Target.target_root resolver)
+    ~extra:(talks_fields resolver)
     ~templates:
       Resolver.Source.
         [ index_template resolver; page_template resolver; layout resolver ]
@@ -325,7 +370,80 @@ let create_blog resolver ~site =
     ~site
     ~source:(Resolver.Source.blog resolver)
     ~into:(Resolver.Target.target_root resolver)
+    ~extra:(Task.const [])
     ~templates:Resolver.Source.[ blog_template resolver; layout resolver ]
+;;
+
+let create_talks_page resolver ~site =
+  create_listing
+    resolver
+    ~site
+    ~source:(Resolver.Source.talks_page resolver)
+    ~into:(Resolver.Target.target_root resolver)
+    ~extra:(talks_fields resolver)
+    ~templates:Resolver.Source.[ talks_template resolver; layout resolver ]
+;;
+
+(* Every published version of a talk is a dated deck
+   [talks/<slug>/<yyyy-mm-dd>.html]; listed most-recent-first. *)
+let fetch_talk_versions resolver source =
+  let open Task in
+  let slug =
+    Path.basename source
+    |> Option.value ~default:""
+    |> Filename.remove_extension
+  in
+  Pipeline.fetch
+    ~only:`Files
+    ~where:(with_ext [ "html" ])
+    ~on:`Source
+    (fun file ->
+       let name =
+         Path.basename file
+         |> Option.value ~default:""
+         |> Filename.remove_extension
+       in
+       Eff.return (name, "/talks/" ^ slug ^ "/" ^ name ^ ".html"))
+    Path.(Resolver.Source.talk_files resolver / slug)
+  >>| List.sort (fun (a, _) (b, _) -> String.compare b a)
+;;
+
+(* The permanent page of a talk: [/talks/<slug>.html]. *)
+let create_talk resolver ~site source =
+  let target = Resolver.Target.talk resolver source in
+  let pipeline =
+    let open Task in
+    let+ () = track_deps resolver
+    and+ templates =
+      Yocaml_jingoo.read_templates
+        Resolver.Source.[ talk_template resolver; layout resolver ]
+    and+ versions = fetch_talk_versions resolver source
+    and+ talk, content =
+      Yocaml_yaml.Pipeline.read_file_with_metadata (module Talk) source
+    in
+    let version (name, url) =
+      Data.record [ "name", Data.string name; "url", Data.string url ]
+    in
+    let fields =
+      inject_site
+        site
+        (Data.
+           [ "page_url", string (Resolver.Target.talk_url source)
+           ; "versions", list_of version versions
+           ; "has_versions", bool (List.length versions > 1)
+           ]
+         @ Talk.normalize talk)
+    in
+    render_through templates fields content
+  in
+  Action.Static.write_file target pipeline
+;;
+
+let create_talks resolver ~site =
+  Batch.iter_files
+    ~where:is_markdown
+    (Resolver.Source.talks resolver)
+    (create_talk resolver ~site)
 ;;
 
 let create_cv resolver ~site =
@@ -498,6 +616,25 @@ let copy_asset_to_root name resolver =
     Path.(Resolver.Source.assets resolver / name)
 ;;
 
+(* Each [talks/<slug>/] folder holds a pandoc-built, self-contained reveal.js
+   deck plus its sources; only the HTML is published, under
+   [/talks/<slug>/]. *)
+let copy_talk_slides resolver =
+  Batch.iter_children
+    ~only:`Directories
+    (Resolver.Source.talk_files resolver)
+    (fun dir ->
+       let into =
+         match Path.basename dir with
+         | Some slug -> Path.(Resolver.Target.talks resolver / slug)
+         | None -> Resolver.Target.talks resolver
+       in
+       Batch.iter_files
+         ~where:(with_ext [ "html" ])
+         dir
+         (Action.copy_file ~into))
+;;
+
 (* GitHub Pages reads [_www/CNAME] to bind the site to gilwath.com. *)
 let copy_cname = copy_asset_to_root "CNAME"
 
@@ -554,11 +691,22 @@ let create_sitemap resolver ~site =
       (month_to_int date.month)
       (date.day :> int)
   in
-  let static_urls = List.map url [ "/"; "/blog.html"; "/cv.html" ] in
+  let static_urls =
+    List.map url [ "/"; "/blog.html"; "/talks.html"; "/cv.html" ]
+  in
   let pipeline =
     let open Task in
     let+ () = track_deps resolver
-    and+ articles = fetch_articles resolver in
+    and+ articles = fetch_articles resolver
+    and+ talks = fetch_talks resolver in
+    let talk_urls =
+      List.map
+        (fun (source, talk) ->
+           url_with_lastmod
+             (Resolver.Target.talk_url source)
+             (iso_date (Talk.date talk)))
+        talks
+    in
     let article_urls =
       List.map
         (fun (path, article) ->
@@ -574,6 +722,7 @@ let create_sitemap resolver ~site =
        ]
        @ static_urls
        @ article_urls
+       @ talk_urls
        @ [ "</urlset>" ])
   in
   Action.Static.write_file sitemap_path pipeline
@@ -602,6 +751,7 @@ let program resolver () =
   let cache = Resolver.Target.cache resolver in
   Action.restore_cache cache
   >>= copy_images resolver
+  >>= copy_talk_slides resolver
   >>= copy_cname resolver
   >>= copy_favicon resolver
   >>= render_og_image resolver
@@ -611,6 +761,8 @@ let program resolver () =
   >>= create_articles resolver ~site
   >>= create_index resolver ~site
   >>= create_blog resolver ~site
+  >>= create_talks_page resolver ~site
+  >>= create_talks resolver ~site
   >>= create_cv resolver ~site
   >>= create_robots resolver ~site
   >>= create_sitemap resolver ~site

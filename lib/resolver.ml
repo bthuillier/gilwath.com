@@ -31,6 +31,8 @@ module Source = struct
   let article_template res = template res "article.html"
   let index_template res = template res "index.html"
   let blog_template res = template res "blog.html"
+  let talks_template res = template res "talks.html"
+  let talk_template res = template res "talk.html"
   let cv_template res = template res "cv.html"
   let og_article_template res = template res "og-article.svg"
 
@@ -40,8 +42,13 @@ module Source = struct
   let articles res = Path.(content res / "articles")
   let experiences res = Path.(content res / "experiences")
   let education res = Path.(content res / "education")
+  let talks res = Path.(content res / "talks")
+
+  (* One folder per talk, holding the slides (and their sources). *)
+  let talk_files res = Path.(source_root res / "talks")
   let index res = Path.(content res / "index.md")
   let blog res = Path.(content res / "blog.md")
+  let talks_page res = Path.(content res / "talks.md")
   let cv res = Path.(content res / "cv.md")
   let site res = Path.(content res / "site.yml")
 end
@@ -73,6 +80,19 @@ module Target = struct
     let stem = Path.basename source |> Option.value ~default:"index" in
     let stem = Filename.remove_extension stem in
     "/articles/" ^ stem ^ ".html"
+  ;;
+
+  let talks res = Path.(target_root res / "talks")
+
+  let talk res source =
+    source |> Path.move ~into:(talks res) |> Path.change_extension "html"
+  ;;
+
+  (* Public URL fragment matching [talk] under the site root. *)
+  let talk_url source =
+    let stem = Path.basename source |> Option.value ~default:"index" in
+    let stem = Filename.remove_extension stem in
+    "/talks/" ^ stem ^ ".html"
   ;;
 
   let style_css res = Path.(target_root res / "style.css")
