@@ -7,15 +7,15 @@ lang: fr
 
 # Qui suis-je ?
 
-Benjamin Thuillier, Senior Software Engineer chez **Conduktor**
-
-- Une quinzaine d'années de Scala, souvent autour de Kafka
-- Ad tech (Teads, TabMo), plateformes data (iAdvize, Talend), aujourd'hui gouvernance Kafka chez Conduktor
-- J'écris sur la programmation fonctionnelle : gilwath.com
+- Benjamin Thuillier
+- Senior Software Engineer chez [Conduktor](https://conduktor.io)
+- [gilwath.com](https://gilwath.com)
+- [@gilwath.com](https://bsky.app/profile/gilwath.com) sur Bluesky
 
 ::: notes
 [0:30, ~45 s]
-Rester bref. Conduktor : produit de gouvernance autour de Kafka, en Scala.
+Rester bref. 15 ans de Scala, souvent autour de Kafka. Ad tech (Teads, TabMo), plateformes data (iAdvize, Talend), aujourd'hui gouvernance Kafka chez Conduktor, en Scala.
+J'écris sur la programmation fonctionnelle sur gilwath.com.
 :::
 
 # Au programme
@@ -27,7 +27,8 @@ Rester bref. Conduktor : produit de gouvernance autour de Kafka, en Scala.
 5. `summonFrom` : trouver une instance, ou la dériver
 6. Assembler `derived` : produits et sommes
 7. Bonus : un interpolateur `debug"..."`
-8. Dans la vraie vie : Circe
+8. Démo
+9. Dans la vraie vie : Circe
 
 ::: notes
 [1:15, ~15 s]
@@ -35,23 +36,27 @@ Rester bref. Conduktor : produit de gouvernance autour de Kafka, en Scala.
 
 # C'est quoi une typeclass ?
 
-> Une type class est un type abstrait et paramétré qui permet d'ajouter un nouveau comportement à n'importe quel type fermé sans passer par le sous-typage. Si vous venez de Java, pensez à `java.util.Comparator[T]`.
+> Un type abstrait et paramétré qui ajoute un comportement à n'importe quel type, sans sous-typage. Pensez à `java.util.Comparator[T]`.
 >
-> (documentation Scala)
+> (d'après la documentation Scala)
 
-- Haskell : construction native du langage
-- Scala : un **pattern** basé sur `trait` + instances `given`
-- Plus proche des *modular implicits* d'OCaml : les instances sont des valeurs qu'on passe (explicitement ou implicitement)
+- Polymorphisme **ad hoc** : un comportement par type
+- Haskell : mot-clé `class`
+- Rust : `trait` + `impl Trait for Type`
+- Scala : un simple `trait`, outillé par `given`, `using`, `derives`
 
 ::: notes
 [1:30, ~1 min 30]
-Insister sur le fait qu'en Scala ce n'est pas une feature du langage, c'est un pattern.
+Rust : les traits sont des typeclasses. Différence avec Scala : une seule instance par type dans tout le programme (cohérence, orphan rule), alors qu'en Scala les given sont des valeurs choisies selon la portée. `#[derive(Debug)]` est l'équivalent Rust de `derives`, mais via une macro.
+Proche des modular implicits (proposition pour OCaml) : les instances sont des valeurs qu'on passe, explicitement ou implicitement.
+Nuance : en Haskell, `class` est une construction du langage. En Scala, la typeclass elle-même est un trait ordinaire (un encodage), mais Scala 3 fournit tout l'outillage autour : given/using, context bounds, et `derives`, le sujet du talk.
+Ad hoc vs paramétrique (Strachey, 1967) : length[A] marche pareil pour tout A, debug fait autre chose pour chaque type. Les typeclasses viennent de Wadler & Blott, "How to make ad-hoc polymorphism less ad hoc" (1989).
 :::
 
 # À quoi ça sert ?
 
-- Décrire comment un type **qu'on ne possède pas** (bibliothèque standard, lib tierce) se conforme à un comportement
-- Donner un comportement à **plusieurs types** sans relation de sous-typage entre eux
+- Ajouter un comportement à un type **qu'on ne possède pas** (stdlib, lib tierce)
+- Le partager entre **plusieurs types** sans lien de sous-typage
 
 ::: notes
 [3:00, ~30 s]
@@ -77,6 +82,7 @@ List(Person("Alice", 30), Person("Bob", 25)).sorted
 Ordering est la typeclass la plus connue de la stdlib, et elle étend justement java.util.Comparator (le lien avec la citation).
 `sorted` ne demande pas que Person hérite de quoi que ce soit : il demande une instance Ordering[Person].
 Sans instance : erreur de compilation. On en fournit une avec un `given`, et `sorted` marche. Person ne sait toujours rien du tri.
+Transition : ici on a écrit l'instance à la main. Le reste du talk : la faire écrire par le compilateur.
 :::
 
 # Dans l'écosystème Scala
@@ -85,43 +91,18 @@ Sans instance : erreur de compilation. On en fournit une avec un `given`, et `so
 |---|---|---|
 | `Encoder[T]` / `Decoder[T]` | Circe | Sérialiser / désérialiser en JSON |
 | `Show[T]`, `Eq[T]` | Cats | Affichage et égalité typés |
-| `Functor[F]`, `Monad[F]` | Cats | Abstraire sur `Option`, `List`, `IO`... |
 | `Read[T]` / `Write[T]` | Doobie | Lire / écrire une ligne SQL |
 
-Point commun : les instances sont fournies par la lib ou dérivées, rarement écrites à la main.
+Instances fournies par la lib, ou dérivées.
 
 ::: notes
 [5:00, ~1 min]
 Circe : on y reviendra à la fin, c'est exactement la technique du talk.
-Cats : Show est très proche de notre Debuggable. Functor/Monad montrent qu'une typeclass peut aussi porter sur un constructeur de type F[_].
+Cats : Show est très proche de notre Debuggable. Cats a aussi Functor/Monad : une typeclass peut porter sur un constructeur de type F[_].
 Doobie : les instances Read/Write pour une case class sont dérivées à partir de celles de ses colonnes.
-Transition : ici on a écrit l'instance à la main. Le reste du talk : la faire écrire par le compilateur.
 :::
 
-# Notre exemple
-
-```scala
-case class Person(name: String, age: Int)
-
-enum Shape:
-  case Circle(radius: Double)
-  case Rectangle(width: Double, height: Double)
-  case Dot
-```
-
-On veut une méthode `debug` plutôt que le `.toString` par défaut :
-
-```scala
-Person("Alice", 30).debug          // person{name=Alice, age=30}
-(Shape.Circle(1.5): Shape).debug   // circle{radius=1.5}
-```
-
-::: notes
-[6:00, ~1 min]
-Noter que le nom du type est en minuscules (Person devient person). On traitera ça plus tard.
-:::
-
-# L'objectif : ne jamais écrire d'instance à la main
+# L'objectif : une ligne, zéro instance écrite
 
 ```scala
 case class Person(name: String, age: Int) derives Debuggable
@@ -132,30 +113,36 @@ enum Shape derives Debuggable:
   case Dot
 ```
 
-C'est ça, la **dérivation automatique**. Le reste du talk : apprendre au compilateur à le faire.
+```scala
+Person("Alice", 30).debug   // person{name=Alice, age=30}
+Shape.Circle(1.5).debug     // circle{radius=1.5}
+Shape.Dot.debug             // dot{}
+```
 
 ::: notes
-[7:00, ~30 s]
+[6:00, ~1 min 30]
+Notre exemple : une case class et un enum. On veut une méthode debug plutôt que le toString par défaut.
+C'est ça, la dérivation automatique : on ajoute `derives Debuggable`, sans écrire d'instance. Le reste du talk : apprendre au compilateur à le faire.
+Noter que le nom du type est en minuscules (Person devient person). On traitera ça plus tard.
 :::
 
 # La typeclass
 
 ```scala
-trait Debuggable[T] {
+trait Debuggable[T]:
   extension (x: T) def debug: String
-}
 ```
 
-- `T` sera `Person`, `Shape`, ...
-- l'`extension` permet d'appeler `.debug` directement sur la valeur
+`extension` : on appelle `.debug` directement sur la valeur.
 
 ::: notes
 [7:30, ~30 s]
+T sera Person, Shape, ...
 :::
 
 # Les instances de base
 
-Pas de `Mirror` pour les primitives : on les écrit nous-mêmes.
+Les primitives : écrites à la main.
 
 ```scala
 given Debuggable[Int] with
@@ -168,12 +155,12 @@ given Debuggable[String] with
 
 ::: notes
 [8:00, ~45 s]
-Les primitives n'ont pas de Mirror, le compilateur ne peut donc rien dériver pour elles.
+Les primitives n'ont pas de Mirror (on voit ce que c'est juste après), le compilateur ne peut donc rien dériver pour elles.
 :::
 
 # Les instances conditionnelles
 
-Une instance pour `List[T]` **si** il en existe une pour `T` :
+Une instance pour `List[T]` **s'il** en existe une pour `T` :
 
 ```scala
 given [T](using d: Debuggable[T]): Debuggable[List[T]] with
@@ -182,13 +169,13 @@ given [T](using d: Debuggable[T]): Debuggable[List[T]] with
 
 given [T](using d: Debuggable[T]): Debuggable[Option[T]] with
   extension (x: Option[T]) def debug: String = x match
-    case Some(v) => s"${v.debug}"
+    case Some(v) => v.debug
     case None    => "none"
 ```
 
 ::: notes
 [8:45, ~1 min]
-Attention : List et Option ont bien un Mirror (ce sont des sommes). Mais la version dérivée afficherait leur structure interne : some{value=1}, ::{head=1, next=...}. On écrit donc ces instances à la main, et comme summonFrom essaie d'abord les given existants, ce sont elles qui sont choisies. Map, elle, n'a pas de Mirror.
+On les écrit à la main pour contrôler l'affichage. On verra avec summonFrom pourquoi elles l'emportent sur une version dérivée.
 :::
 
 # Que fait `derives` ?
@@ -196,12 +183,13 @@ Attention : List et Option ont bien un Mirror (ce sont des sommes). Mais la vers
 `derives Debuggable` demande au compilateur d'appeler :
 
 ```scala
-inline def derived[T](using m: Mirror.Of[T]): Debuggable[T] = ???
+object Debuggable:
+  inline def derived[T](using m: Mirror.Of[T]): Debuggable[T] = ???
 ```
 
 Un `Mirror` décrit la **forme** d'un type :
 
-| | Quoi |
+| Mirror | Pour quels types |
 |---|---|
 | `Mirror.Product` | case class, object, cas d'enum |
 | `Mirror.Sum` | sealed class / trait, enum |
@@ -218,9 +206,7 @@ Un `Mirror` décrit la **forme** d'un type :
 | `m.MirroredElemLabels` | `("name", "age")` |
 | `m.MirroredLabel` | `"Person"` |
 
-Problème : ce sont des **types**, pas des valeurs.
-
-Il nous faut : une `List[Debuggable[?]]` et une `List[String]`.
+Ce sont des **types**. Il nous faut des valeurs : `List[Debuggable[?]]`, `List[String]`.
 
 ::: notes
 [10:45, ~1 min 15]
@@ -242,7 +228,7 @@ MirroredElemLabels est un tuple de types singleton string. Il faut faire le pont
 ```scala
 inline def summonAll[T <: Tuple]: List[Debuggable[?]] =
   inline erasedValue[T] match
-    case _: EmptyTuple   => Nil
+    case _: EmptyTuple     => Nil
     case _: (head *: tail) => deriveOrSummon[head] :: summonAll[tail]
 ```
 
@@ -263,16 +249,15 @@ Deux formes de tuple : EmptyTuple (cas de base) et head *: tail.
 ```scala
 inline def labelsOf[T <: Tuple]: List[String] =
   inline erasedValue[T] match
-    case _: EmptyTuple   => Nil
+    case _: EmptyTuple     => Nil
     case _: (head *: tail) => constValue[head].asInstanceOf[String] :: labelsOf[tail]
 ```
 
-- `head` est un type singleton comme `"name"`
-- `constValue[head]` le ramène à la valeur `"name"`
-- Résultat pour `Person` : `List("name", "age")`
+`constValue[head]` : du type singleton `"name"` à la valeur `"name"`.
 
 ::: notes
 [14:15, ~1 min]
+head est un type singleton comme "name". Résultat pour Person : List("name", "age").
 :::
 
 # `summonFrom` : trouver ou dériver
@@ -288,12 +273,13 @@ inline def deriveOrSummon[T]: Debuggable[T] =
 1. Une instance existe ? On la prend.
 2. Sinon, `T` a un `Mirror` ? On la dérive.
 
-Dérivation **récursive** (un `Address` dans `Person`) et **transparente**.
+Dérivation **récursive** et **transparente**.
 
 ::: notes
 [15:15, ~1 min 30]
 Pourquoi ne pas juste summon ? Parce que tous les types n'ont pas de given écrit à la main : un champ Address, ou les cas d'un enum, chacun est un produit pour lequel personne n'a écrit d'instance.
 summonFrom garde la première branche qui type-check.
+C'est pour ça que nos instances List et Option l'emportent : elles ont un Mirror (ce sont des sommes), mais la version dérivée afficherait leur structure interne (some{value=1}, ::{head=1, next=...}). Map, elle, n'a pas de Mirror.
 Types récursifs : cette version naïve ne les gère pas, mais en rendant l'évaluation des instances paresseuse (lazy), on supporterait la récursivité.
 :::
 
@@ -301,12 +287,16 @@ Types récursifs : cette version naïve ne les gère pas, mais en rendant l'éva
 
 ```scala
 inline def derived[T](using m: Mirror.Of[T]): Debuggable[T] =
+  // (String, Int) -> List(Debuggable[String], Debuggable[Int])
   val instances = summonAll[m.MirroredElemTypes]
-  val labels    = labelsOf[m.MirroredElemLabels]
-  val typeName  = constValue[m.MirroredLabel]
   inline m match
-    case _: Mirror.ProductOf[T] => productDebuggable(typeName, labels, instances)
-    case s: Mirror.SumOf[T]     => sumDebuggable(instances, s)
+    case p: Mirror.ProductOf[T] =>
+      // ("name", "age") -> List("name", "age")
+      val labels   = labelsOf[p.MirroredElemLabels]
+      // "Person" -> "Person"
+      val typeName = constValue[p.MirroredLabel]
+      productDebuggable(typeName, labels, instances)
+    case s: Mirror.SumOf[T] => sumDebuggable(instances, s)
 ```
 
 `inline match` : choix à la compilation, la branche inutile disparaît.
@@ -314,6 +304,7 @@ inline def derived[T](using m: Mirror.Of[T]): Debuggable[T] =
 ::: notes
 [16:45, ~1 min 15]
 Pas de test de type au runtime.
+Une somme n'a besoin que des instances : labels et typeName ne sont calculés que dans la branche produit. (L'article les calcule encore avant le match, sans conséquence : une petite liste inutile, construite une seule fois.)
 :::
 
 # Les produits
@@ -336,6 +327,7 @@ private def productDebuggable[T](
 ::: notes
 [18:00, ~1 min 30]
 Le préfixe est calculé une seule fois, à la construction de l'instance.
+toSnakeCase : Person devient person, HTTPServer devient http_server. Pas le sujet, le code est dans l'article.
 instances et labels s'alignent par position avec les champs. productIterator donne les valeurs au runtime.
 Les asInstanceOf ont l'air dangereux mais ne le sont pas : summonAll a déjà vérifié à la compilation que chaque instance correspond au champ à la même position.
 :::
@@ -353,32 +345,13 @@ private def sumDebuggable[T](
 }
 ```
 
-- `ordinal(x)` : quel cas est `x`
-- Aucune logique d'affichage : on délègue à l'instance du cas (elle-même un **produit** dérivé)
+`ordinal(x)` donne le cas, et on délègue à son instance (un **produit** dérivé).
 
 ::: notes
 [19:30, ~1 min]
+Aucune logique d'affichage ici.
 Vector pour un accès en temps constant par ordinal (une List serait parcourue à chaque appel).
 Un Shape EST un Circle, un Rectangle ou un Dot. C'est la récursion de deriveOrSummon qui paie.
-:::
-
-# Détour cosmétique : snake_case
-
-`Person` → `person`, `HTTPServer` → `http_server`
-
-```scala
-private def toSnakeCase(name: String): String =
-  s" $name ".sliding(3).flatMap { window =>
-    val prev = window.charAt(0); val c = window.charAt(1); val next = window.charAt(2)
-    val boundary = c.isUpper &&
-      (prev.isLower || prev.isDigit || (prev.isUpper && next.isLower))
-    (if boundary then "_" else "") + c.toLower
-  }.mkString
-```
-
-::: notes
-[20:30, ~30 s]
-Passer vite, ce n'est pas le sujet.
 :::
 
 # Bonus : un interpolateur `debug"..."`
@@ -395,14 +368,13 @@ extension (sc: StringContext)
 ```
 
 ```scala
-import scala.language.implicitConversions
-
 debug"user=$alice, shape=$shape"
 // affiche : user=person{name=Alice, age=30}, shape=circle{radius=1.5}
 ```
 
 ::: notes
-[21:00, ~1 min 30]
+[20:30, ~1 min 30]
+Côté appelant, il faut import scala.language.implicitConversions.
 Un interpolateur = une extension sur StringContext. Les interpolateurs standards appellent toString, donc on pré-rend chaque argument via Debuggable.
 L'interpolateur fait directement le println : pas besoin d'écrire println(debug"...").
 Pas d'instance Debuggable[T] : erreur de compilation directement sur le $arg fautif.
@@ -415,13 +387,11 @@ scala https://gist.github.com/bthuillier/4f65135b17bd41f41adcb862ef6fd223
 ```
 
 ::: notes
-[22:30, ~2 min 30]
-Montrer : Person, Shape, un champ imbriqué (Address), puis retirer une instance pour montrer l'erreur de compilation.
+[22:00, ~3 min]
+Montrer : Person, Shape, un champ imbriqué (Test contient un TestValue), puis retirer une instance pour montrer l'erreur de compilation.
 :::
 
 # Dans la vraie vie : Circe
-
-C'est exactement la technique de **Circe** pour dériver les encoders / decoders JSON.
 
 | Nous | Circe |
 |---|---|
@@ -434,6 +404,7 @@ Même `Mirror`, même récursion, type de sortie différent (`String` vs AST JSO
 
 ::: notes
 [25:00, ~1 min]
+C'est exactement la technique de Circe pour dériver les encoders / decoders JSON.
 Source : modules/core/shared/src/main/scala-3/io/circe/derivation/package.scala
 :::
 
@@ -443,7 +414,7 @@ Source : modules/core/shared/src/main/scala-3/io/circe/derivation/package.scala
 - **`inline`** (`erasedValue`, `constValue`, `inline match`) : pont entre niveau type et niveau valeur
 - **`summonFrom`** : rend la dérivation récursive
 
-La dérivation automatique en Scala 3, ce n'est pas de la magie : c'est du code ordinaire qui s'exécute à la compilation.
+Pas de magie : du code ordinaire, exécuté à la compilation.
 
 ::: notes
 [26:00, ~1 min]
@@ -451,16 +422,27 @@ La dérivation automatique en Scala 3, ce n'est pas de la magie : c'est du code 
 
 # Merci ! Questions ?
 
-- Article : *Automatic Typeclass Derivation in Scala 3*
-- Code : gist.github.com/bthuillier/4f65135b17bd41f41adcb862ef6fd223
+- Article : [*Automatic Typeclass Derivation in Scala 3*](https://gilwath.com/articles/scala_automatic_derivation.html)
+- Code : [gist.github.com/bthuillier/4f65135b…](https://gist.github.com/bthuillier/4f65135b17bd41f41adcb862ef6fd223)
+
+![](qr-gist.svg){width=220}
 
 ::: notes
 [27:00, ~3 min de questions]
 :::
 
 <!--
-Rendu :
-pandoc derivation_automatique.md -t dzslides -s --embed-resources --css slides.css -o derivation_automatique.html
+Rendu reveal.js (un fichier daté par version présentée, publié sur le blog
+sous /talks/derivation_automatique/<date>.html ; ne pas écraser une version
+déjà présentée, en créer une nouvelle) :
+pandoc derivation_automatique.md -t revealjs -s --embed-resources --css reveal.css -V theme=white -V width=1280 -V height=720 -V margin=0 -V center=false -V transition=none -V slideNumber=true -V hash=true -V controls=false -o 2026-11-19.html
+
+Présenter (touche s : vue présentateur avec notes et chrono) :
+open -a "Google Chrome" 2026-11-19.html
+
+PDF des notes (secours) :
+pandoc derivation_automatique.md -s --embed-resources --css notes.css -o /tmp/notes.html
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --no-pdf-header-footer --print-to-pdf=notes.pdf /tmp/notes.html
 
 Notes du slide titre :
 [0:00, ~30 s]

@@ -1,0 +1,29 @@
+<main>
+  <article class="article">
+    <h1>{{ title }}</h1>
+    <p class="article-meta">
+      <time datetime="{{ date.repr.date }}">{{ printf("%02d.%02d.%d", date.day, date.month, date.year) }}</time>
+      {% if has_event %}
+        · {% if has_event_url %}<a href="{{ event_url }}">{{ event }}</a>{% else %}{{ event }}{% endif %}
+      {% endif %}
+    </p>
+    <p class="tagline">{{ description }}</p>
+
+    <p><a href="{{ slides }}">View the slides →</a></p>
+
+    {{safe (yocaml_body) }}
+
+    {% if has_versions %}
+    <p class="section-label">Versions</p>
+    <ul>
+      {% for version in versions %}
+      <li><a href="{{ version.url }}">{{ version.name }}</a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <p class="article-meta">
+      <a href="/talks.html">← All talks</a>
+    </p>
+  </article>
+</main>

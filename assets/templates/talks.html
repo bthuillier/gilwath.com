@@ -1,0 +1,25 @@
+<main>
+  <section class="hero">
+    <h1>Talks</h1>
+    {{safe (yocaml_body) }}
+  </section>
+
+  {% if has_talks %}
+  <ul class="post-list talk-list">
+    {% for talk in talks %}
+    <li>
+      <time datetime="{{ talk.date.repr.date }}">{{ printf("%02d.%02d.%d", talk.date.day, talk.date.month, talk.date.year) }}</time>
+      <a href="{{ talk.url }}">{{ talk.title }}</a>
+      <p class="talk-description">
+        {{ talk.description }}
+        {% if talk.has_event %}
+        <br>{% if talk.has_event_url %}<a href="{{ talk.event_url }}">{{ talk.event }}</a>{% else %}{{ talk.event }}{% endif %}
+        {% endif %}
+      </p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>Nothing here yet.</p>
+  {% endif %}
+</main>

@@ -39,7 +39,11 @@ dune exec blog
 │   └── templates/   # page templates
 ├── content/
 │   ├── articles/    # blog posts
+│   ├── talks/       # one front-matter-only file per talk (listed on the home page)
 │   └── pages/       # standalone pages
+├── talks/
+│   └── <slug>/      # pandoc sources + one dated reveal.js deck per version (<date>.html),
+│                    # every *.html is published to /talks/<slug>/
 ├── bin/
 │   ├── blog.ml      # entry point
 │   └── dune

@@ -1,0 +1,183 @@
+/* ---------------------------------------------------------------
+   Slides reveal.js, style repris du blog (assets/css/style.css) :
+   typographique, presque noir sur presque blanc, pas de couleur.
+   Chargé après le thème reveal "white", dont il écrase les règles.
+   --------------------------------------------------------------- */
+
+:root {
+  --bg:        #fcfcfc;
+  --bg-soft:   #f4f4f4;
+  --ink:       #191919;
+  --ink-muted: #6e6e6e;
+  --rule:      #dcdcdc;
+
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino,
+                "Hoefler Text", "Charter", Cambria, Georgia, serif;
+  --font-mono:  ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+  --syn-string:   #5e7a5e;
+  --syn-type:     #47617a;
+  --syn-function: #705d84;
+  --syn-constant: #93524a;
+  --syn-comment:  #8f8f8f;
+  --syn-punct:    #8a8a8a;
+
+  /* Variables du thème reveal */
+  --r-background-color: var(--bg);
+  --r-main-color: var(--ink);
+  --r-heading-color: var(--ink);
+  --r-link-color: var(--ink);
+  --r-link-color-hover: var(--ink-muted);
+  --r-main-font: var(--font-serif);
+  --r-heading-font: var(--font-serif);
+  --r-code-font: var(--font-mono);
+  --r-heading-text-transform: none;
+  --r-heading-font-weight: 400;
+  --r-heading-letter-spacing: -0.02em;
+  --r-main-font-size: 30px;
+}
+
+body, .reveal-viewport { background: var(--bg); }
+
+/* ---------- Canevas 1280x720, contenu calé en haut à gauche ---- */
+.reveal .slides { text-align: left; }
+.reveal .slides section {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 64px 96px !important;
+  line-height: 1.5;
+  font-feature-settings: "kern", "liga", "onum";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Titres -------------------------------------------- */
+.reveal h1 {
+  margin: 0 0 40px;
+  font-size: 52px;
+  line-height: 1.15;
+  text-shadow: none;
+}
+
+/* Slide titre */
+.reveal #title-slide {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+}
+.reveal #title-slide h1.title { font-size: 68px; margin-bottom: 24px; }
+.reveal #title-slide .subtitle {
+  font-size: 32px;
+  font-style: italic;
+  color: var(--ink-muted);
+  margin: 0;
+}
+.reveal #title-slide .author {
+  padding-top: 48px;
+  font-size: 26px;
+  color: var(--ink-muted);
+}
+
+/* ---------- Texte --------------------------------------------- */
+.reveal p { margin: 0 0 24px; }
+
+.reveal ul, .reveal ol {
+  display: block;
+  margin: 0 0 24px;
+  padding-left: 1.2em;
+}
+.reveal li { margin-bottom: 12px; }
+.reveal li > ul { margin: 8px 0 0; }
+
+.reveal strong { font-weight: 600; }
+
+.reveal blockquote {
+  width: auto;
+  margin: 0 0 32px;
+  padding: 0 0 0 28px;
+  border-left: 3px solid var(--rule);
+  background: none;
+  box-shadow: none;
+  color: var(--ink-muted);
+  font-size: 28px;
+  font-style: italic;
+}
+.reveal blockquote p { margin-bottom: 12px; }
+.reveal blockquote p:first-child,
+.reveal blockquote p:last-child { display: block; }
+
+.reveal a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+}
+
+.reveal img { margin: 0; }
+
+/* ---------- Code ---------------------------------------------- */
+.reveal code { font-family: var(--font-mono); font-size: .85em; text-transform: none; }
+.reveal :not(pre) > code {
+  background: var(--bg-soft);
+  padding: .05em .3em;
+  border-radius: 4px;
+}
+
+.reveal div.sourceCode,
+.reveal pre {
+  width: 100%;
+  margin: 0 0 28px;
+  background: var(--bg-soft);
+  box-shadow: none;
+  font-size: 20px;
+  line-height: 1.45;
+}
+.reveal pre { padding: 20px 28px; box-sizing: border-box; }
+.reveal div.sourceCode > pre { margin: 0; }
+.reveal pre code {
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+  background: none;
+  white-space: pre;
+}
+
+/* Coloration pandoc, palette sourde du blog */
+.reveal pre code span.kw,
+.reveal pre code span.cf { color: var(--ink); font-weight: 600; }
+.reveal pre code span.st,
+.reveal pre code span.ss,
+.reveal pre code span.ch,
+.reveal pre code span.vs { color: var(--syn-string); }
+.reveal pre code span.dt { color: var(--syn-type); }
+.reveal pre code span.fu { color: var(--syn-function); }
+.reveal pre code span.dv,
+.reveal pre code span.fl,
+.reveal pre code span.bn,
+.reveal pre code span.cn { color: var(--syn-constant); }
+.reveal pre code span.co { color: var(--syn-comment); font-style: italic; }
+.reveal pre code span.op,
+.reveal pre code span.ot { color: var(--syn-punct); }
+
+/* ---------- Tableaux ------------------------------------------ */
+.reveal table {
+  margin: 0 0 32px;
+  border-collapse: collapse;
+  font-size: 26px;
+}
+.reveal table th, .reveal table td {
+  padding: 10px 28px 10px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+}
+.reveal table th { font-weight: 600; }
+
+/* ---------- Chrome reveal -------------------------------------- */
+.reveal .progress { color: var(--ink-muted); height: 3px; }
+.reveal .slide-number {
+  background: none;
+  color: var(--ink-muted);
+  font-family: var(--font-serif);
+  font-size: 18px;
+}
+.reveal .controls { color: var(--ink-muted); }
